@@ -1,0 +1,6 @@
+{
+    "AUTHOR" : "irdumb",
+    "DESCRIPTION" : "WARNING: Cog optionally edits economy.py's bank.json file to let the bot recieve economy points\nWARNING: Cog uses economy.py to edit it's users' bank balance.\n\nTrickles economy.py currency to active users. Because economy.py's bank is cross-server, cross-server users may begin to horde a lot of currency ;)",
+    "DISABLED" : false,
+    "NAME" : "WARNING: read cog info. Silently trickles economy.py's currency points to active users"
+}

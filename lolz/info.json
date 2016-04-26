@@ -1,0 +1,6 @@
+{
+    "AUTHOR" : "Will, irdumb, Nikki, and Canule",
+    "DESCRIPTION" : "!!!WARNING!!! - This cog overwrites the bot's send_message function during runtime. If something weird happens and your bot is stuck LOLZing, !unload lolz and !load lolz. If that doesn't work, restart your bot\n\nThis cog is a proof of concept for future API overrides and translation cogs.\nLET UZ NAO COMMENCE TEH LOLZ",
+    "DISABLED" : false,
+    "NAME" : "WARNING: Read the cog info. TRANSLATEZ EVERYTHIN TEH BOT SEZ INTO LOLCAT/LOLSPEAK"
+}
