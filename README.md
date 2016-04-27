@@ -10,3 +10,6 @@ If you'd like to help with that or anything else, please put up issues and PRs a
 If that is the case, there will be an effort to warn the user about it in the cog's info.json file.  
 Again, there minimal effor will be made to convert the actual cogs though.  
 If you find any issues, please do submit it. It will help us track them for when we do fix them.
+
+If you have questions or would like some support for these cogs, please head over to the **#coding** channel in Twentysix's [Red - Discord Bot](https://discordapp.com/invite/0k4npTwMvTpv9wrh) discord server.  
+There's no guarantee I'll help you :wink: especially if you don't bring snacks.
