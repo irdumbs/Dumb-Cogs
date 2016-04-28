@@ -82,5 +82,4 @@ class Hal:
                     audio.queue.append(link)
 
 def setup(bot):
-    print("I auto updated. -------------------------------")
     bot.add_cog(Hal(bot))
