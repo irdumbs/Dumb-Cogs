@@ -95,12 +95,12 @@ class Lolz:
                 if server is not None:
                     # if setting exists and is on
                     if self.settings["SERVER"].get(server.id, False):
-                        # if not a link
-                        if not re.findall(self.regex['link'], content):
+                        # if not a link -- moved to sentence
+                        #if not re.findall(self.regex['link'], content):
                             # if not randint(0,5):
                             #     content = content.replace(" ", " :middle_finger: ")
                             # content =  content + " :middle_finger:"
-                            content = self.translate_sentence(content).upper()
+                        content = self.translate_sentence(content)
             # msg = await old_send(self.bot, destination, content, *args,
             # **kwargs)
             msg = await old_send(destination, content, *args, **kwargs)
@@ -118,16 +118,21 @@ class Lolz:
         # if re.findall(self.regex['link'], word):
         #     return word
 
+        # if emoji, don't change we're just gonna ignore all :words: regardless if emoji
+        # : is probably being sent as a word itself. - fixed in sentence regex
+        if word.startswith(':') and word.endswith(':'):
+            return word
+
         # lower case lolz pleaz, ph is pronounces f!
         word = word.lower()
 
         # easiest first, look in dictionary
         if word in self.tranzlashun:
-            return self.tranzlashun[word]
+            return self.tranzlashun[word].upper()
 
         # fastest, check the cache...
         if word in self.cached:
-            return self.cached[word]
+            return self.cached[word].upper()
 
         word = word.replace('ph', 'f')
 
@@ -137,7 +142,7 @@ class Lolz:
             if result['prefix'] in self.tranzlashun:
                 self.cached[word] = '%s%s' % (
                     self.tranzlashun[result['prefix']], result['suffix'])
-                return self.cached[word]
+                return self.cached[word].upper()
 
         # no matches? try heuristics unless we've been told otherwise
         # if self.heuristics is True:
@@ -145,27 +150,31 @@ class Lolz:
             match = regex.search(word)
             if match:
                 self.cached[word] = match.group(1) + replace
-                return self.cached[word]
+                return self.cached[word].upper()
         tion = self.regex['tion'].search(word)
         if tion:
             self.cached[word] = tion.group(1) + 'shun' + tion.group(2)
-            return self.cached[word]
+            return self.cached[word].upper()
         stoz = self.regex['stoz'].search(word)
         if stoz and not self.regex['ous'].search(word):
             self.cached[word] = stoz.group(1) + 'z'
-            return self.cached[word]
+            return self.cached[word].upper()
 
         # no matches, leave it alone!
         self.cached[word] = word
-        return word
+        return word.upper()
 
     # code edited from lolz
     def translate_sentence(self, sentence):
+        # no links
+        if re.findall(self.regex['link'], sentence):
+            return sentence
+
         new_sentence = ''
         # reminder to self...
         # ([\w]*) - match 0 or more a-zA-Z0-9_ group
         # ([\W]*) - match 0 or more non-(see above) group
-        for word, space in re.findall("([\w]*)([\W]*)", sentence):
+        for word, space in re.findall("([:\w]*)([^:\w]*)", sentence):
             word = self.translate_word(word)
             # if word != '':
             new_sentence += word + space
