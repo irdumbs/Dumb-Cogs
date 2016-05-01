@@ -4,6 +4,7 @@ from .utils.dataIO import fileIO
 from .utils import checks
 from random import randint
 from random import choice as randchoice
+import os
 import re
 
 
