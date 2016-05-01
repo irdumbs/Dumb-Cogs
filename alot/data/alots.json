@@ -65,6 +65,7 @@
         "prs":["pull-requests","patches","code"],
         "pr's":["pull-requests","patches","code"],
         "pull request":["pull-requests","patches"],
+        "issue":["pull-requests","patches","code-ROS"],
         "line":["code-ROS","words","code"],
         "question":["questions"],
         "ask":["questions"],
