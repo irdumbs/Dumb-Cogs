@@ -215,7 +215,7 @@
         "oatmeal":"http://s3.amazonaws.com/theoatmeal-img/comics/oatmeal_day/alot.png",
         "plush-right":"http://media1.fdncms.com/chicago/imager/who-wants-to-own-alot/u/original/5189227/1323898246-alotmonster03.jpg",
         "code":"http://i.imgur.com/2fx07oA.png",
-        "happiness":"http://archive.garron.us/img/2010/alot_of_happiness.png",
+        "happiness":"https://archive.garron.us/img/2010/alot_of_happiness.png",
         "thanks":"http://i.imgur.com/2GlMqob.png",
         "grief":"http://oi55.tinypic.com/20ru0j9.jpg",
         "work":"http://i.imgur.com/Jw9HBLA.png",
@@ -239,7 +239,7 @@
         "art":"http://36.media.tumblr.com/tumblr_m1ic2wseDN1qe6p9xo1_500.jpg",
         "eggs":"https://s-media-cache-ak0.pinimg.com/216x146/36/1e/67/361e67134e49476ca52cbdd292baff46.jpg",
         "quite":"http://i.imgur.com/nmHZXRT.png",
-        "ice":"http://archive.garron.us/img/2010/alot_of_ice_skating.png",
+        "ice":"https://archive.garron.us/img/2010/alot_of_ice_skating.png",
         "eat":"https://s-media-cache-ak0.pinimg.com/236x/1e/dd/2f/1edd2ff3a4314571bc5a3bb6f01e3405.jpg",
         "that":"http://i.imgur.com/aPaDhiY.png"
     }
