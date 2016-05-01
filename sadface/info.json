@@ -1,6 +1,6 @@
 {
     "AUTHOR" : "irdumb",
-    "DESCRIPTION" : "WARNING: This cog is only meant as an example. Please unload it if your bot is in the Red-DiscordBot server. You can't turn it off per-server, so it gets pretty annoying :P\n\nThis cog demonstrates:\n 1. on_message listeners\n 2. non-json file reading/writing\n 3. simple aiohttp example",
+    "DESCRIPTION" : "WARNING: This cog is only meant as an example. Please unload it if your bot is in the Red-DiscordBot server. You can't turn it off per-server, so it gets pretty annoying :P\n\nThis cog demonstrates:\n 1. on_message listeners\n 2. file reading/writing both json and non-json\n 3. simple aiohttp example\n 4. normal settings usage / enabling behavior per-server",
     "DISABLED" : false,
     "NAME" : "simple example cog for on_message listeners/triggers"
 }
