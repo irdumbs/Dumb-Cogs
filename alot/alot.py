@@ -61,7 +61,7 @@ class Alot:
             if server.id not in self.settings["SERVERS"]:
                 #default off
                 self.settings["SERVERS"][server.id] = False
-            if not self.settings["SERVERS"]:
+            if not self.settings["SERVERS"][server.id]:
                 return
 
 
