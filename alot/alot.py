@@ -55,7 +55,7 @@ class Alot:
         if message.author.id == self.bot.user.id:
             return
 
-        server = ctx.message.server
+        server = message.server
         #let PMs
         if server != None:
             if server.id not in self.settings["SERVERS"]:
