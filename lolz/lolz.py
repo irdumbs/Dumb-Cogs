@@ -27,7 +27,7 @@ request_logging_format = '{method} {response.url} has returned {response.status}
 request_success_log = '{response.url} with {json} received {data}'
 
 
-default_settings = {"SERVER": {"DEFAULT": False}}
+default_settings = {"SERVER": {"DEFAULT": False}, "DM": {"DEFAULT" : False}}
 
 
 class Lolz:
@@ -61,16 +61,20 @@ class Lolz:
         # self.old_send = commands.Bot.send_message
         # self.old_send = self.bot.send_message
 
-    @commands.command(pass_context=True, no_pm=True)
+    @commands.command(pass_context=True)
     async def lolz(self, ctx):
         """Toggle lolspeak for this server"""
         server = ctx.message.server
-        if server.id not in self.settings["SERVER"]:
-            self.settings["SERVER"][
-                server.id] = default_settings["SERVER"]["DEFAULT"]
-        self.settings["SERVER"][
-            server.id] = not self.settings["SERVER"][server.id]
-        if self.settings["SERVER"][server.id]:
+        key = "SERVER"
+        if server is None:
+            server = ctx.message.author
+            key = "DM"
+        if server.id not in self.settings[key]:
+            self.settings[key][
+                server.id] = default_settings[key]["DEFAULT"]
+        self.settings[key][
+            server.id] = not self.settings[key][server.id]
+        if self.settings[key][server.id]:
             await self.bot.say("I will now lolz sentences.")
         else:
             await self.bot.say("I won't lolz sentences anymore.")
@@ -87,20 +91,11 @@ class Lolz:
             channel_id = await self.bot._resolve_destination(destination)
             channel = self.bot.get_channel(channel_id)
             content = str(content)
-            if not channel.is_private:
-                # what about group friend things. might need to fix later. just
-                # check if None now..
-                server = channel.server
-                # we aren't in PM or future group PM i hope
-                if server is not None:
-                    # if setting exists and is on
-                    if self.settings["SERVER"].get(server.id, False):
-                        # if not a link -- moved to sentence
-                        #if not re.findall(self.regex['link'], content):
-                            # if not randint(0,5):
-                            #     content = content.replace(" ", " :middle_finger: ")
-                            # content =  content + " :middle_finger:"
-                        content = self.translate_sentence(content)
+
+            if (not channel.is_private and self.settings["SERVER"].get(channel.server.id, False)
+                ) or (channel.is_private and self.settings["DM"].get(channel.user.id, False)):
+                # if not a link -- moved to sentence
+                content = self.translate_sentence(content)
             # msg = await old_send(self.bot, destination, content, *args,
             # **kwargs)
             msg = await old_send(destination, content, *args, **kwargs)
@@ -218,6 +213,14 @@ def check_files(bot):
     if not os.path.isfile(settings_path):
         print("Creating default lolz settings.json...")
         fileIO(settings_path, "save", default_settings)
+    else: #consistency check
+        current = fileIO(settings_path, "load")
+        if current.keys() != default_settings.keys():
+            for key in default_settings.keys():
+                if key not in current.keys():
+                    current[key] = default_settings[key]
+                    print("Adding " + str(key) + " field to lolz settings.json")
+            fileIO(settings_path, "save", current)
 
 
 def setup(bot):
