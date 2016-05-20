@@ -230,7 +230,7 @@ class Snacktime:
             return
         self.snacktimeCheckLock[scid] = True
         if seconds < 0:
-            await self.bot.say("I'm not sure where snackbur is.. He's already "+ str(-int(seconds/60)) + " minutes late!")
+            await self.bot.say("I'm not sure where snackburr is.. He's already "+ str(-int(seconds/60)) + " minutes late!")
         else:
             await self.bot.say("snackburr's out on errands! I think he'll be back in " + str(int(seconds/60)) + " minutes")
         await asyncio.sleep(40)
