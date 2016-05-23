@@ -2851,7 +2851,7 @@ class Adventure:
         try:
             team = self._safe_path(team).lower()
             tname = self._team_name(server,team)
-            leaders = self.get_leaders(team)
+            leaders = self.get_leaders(server,team)
             if len(leaders) == 1:
                 raise NoTeamMembers()
         except NoTeam:
