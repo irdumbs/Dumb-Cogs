@@ -2315,7 +2315,7 @@ Apache License, Version 2.0 as detailed in the accompanying README.txt.
 # import argparse
 # import os
 import re
-import readline
+# import readline
 # from sys import executable, stdout
 # from time import sleep
 #from . import load_advent_dat
