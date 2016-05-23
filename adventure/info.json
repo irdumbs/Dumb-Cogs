@@ -1,0 +1,6 @@
+{
+    "AUTHOR" : "irdumb",
+    "DESCRIPTION" : "WARNING: Cog is in beta. Missing functions and no guarantee it works.\n\nPlease submit issues if you find any bugs or have suggestions.",
+    "DISABLED" : false,
+    "NAME" : "Port of the original text adventure game"
+}
