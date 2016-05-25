@@ -15,11 +15,13 @@
 import asyncio
 
 from discord.ext import commands
+import discord.utils
 from .utils.dataIO import fileIO
 import logging
 import re
 import os
 from random import randint
+from __main__ import settings
 
 
 log = logging.getLogger(__name__)
@@ -66,18 +68,22 @@ class Lolz:
         """Toggle lolspeak for this server"""
         server = ctx.message.server
         key = "SERVER"
-        if server is None:
-            server = ctx.message.author
-            key = "DM"
-        if server.id not in self.settings[key]:
+        if server is None or check_mod(ctx):
+            if server is None:
+                server = ctx.message.author
+                key = "DM"
+            if server.id not in self.settings[key]:
+                self.settings[key][
+                    server.id] = default_settings[key]["DEFAULT"]
             self.settings[key][
-                server.id] = default_settings[key]["DEFAULT"]
-        self.settings[key][
-            server.id] = not self.settings[key][server.id]
-        if self.settings[key][server.id]:
-            await self.bot.say("I will now lolz sentences.")
+                server.id] = not self.settings[key][server.id]
+            if self.settings[key][server.id]:
+                await self.bot.say("I will now lolz sentences.")
+            else:
+                await self.bot.say("I won't lolz sentences anymore.")
         else:
-            await self.bot.say("I won't lolz sentences anymore.")
+            await self.bot.say("You don't have permission to touch the lolz.")
+            return
         fileIO("data/lolz/settings.json", "save", self.settings)
 
     # This is bad. If you're reading this, you're probably trying to find out how it does what it does.
@@ -200,6 +206,15 @@ class Lolz:
                 '[CLEANUP:] -- If that is the case, the bot may need to be '
                 'restarted')
 
+def check_mod(ctx):
+    if ctx.message.author.id == settings.owner:
+        return True
+    server = ctx.message.server
+    mod_role = settings.get_server_mod(server).lower()
+    admin_role = settings.get_server_admin(server).lower()
+    author = ctx.message.author
+    role = discord.utils.find(lambda r: r.name.lower() in (mod_role,admin_role), author.roles)
+    return role is not None
 
 def check_folders():
     if not os.path.exists("data/lolz"):
