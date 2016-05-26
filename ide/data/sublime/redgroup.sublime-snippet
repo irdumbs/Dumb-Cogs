@@ -1,0 +1,16 @@
+<snippet>
+  <!-- Example: Hello, ${1:this} is a ${2:snippet}. -->
+  <content><![CDATA[
+@commands.group(pass_context=True${2:, no_pm=True})
+async def ${1:command_group_name}(self, ctx):
+    """description"""
+    if ctx.invoked_subcommand is None:
+        await send_cmd_help(ctx)
+
+]]></content>
+  <!-- Optional: Set a tabTrigger to define how to trigger the snippet -->
+  <tabTrigger>group</tabTrigger>
+  <description>Red cog command group</description>
+  <!-- Optional: Set a scope to limit where the snippet will trigger -->
+  <scope>source.python</scope>
+</snippet>

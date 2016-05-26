@@ -1,0 +1,37 @@
+{
+    "scope": "source.python",
+
+    "completions":
+    [
+
+    // say
+    {"trigger": "say\tawait self.bot.say()", "contents": "await self.bot.say($0)"},
+    {"trigger": "say\tawait self.bot.reply()", "contents": "await self.bot.reply($0)"},
+    {"trigger": "say\tawait self.bot.send_message()", "contents": "await self.bot.send_message(${1:channel}, ${0:content})"},
+
+    // reply
+    {"trigger": "reply\tawait self.bot.reply()", "contents": "await self.bot.reply($0)"},
+    {"trigger": "reply\tawait self.bot.send_message()", "contents": "await self.bot.send_message(${1:channel}, \"{}, $0\".format(${2:author}.mention))"},
+
+    // ctx
+    {"trigger": "ctx\tctx.message.author", "contents": "ctx.message.author"},
+    {"trigger": "ctx\tctx.message.channel", "contents": "ctx.message.channel"},
+    {"trigger": "ctx\tctx.message.server", "contents": "ctx.message.server"},
+
+    // checks
+    {"trigger": "checks\tmod_or_permissions(administrator=True)", "contents": "@checks.mod_or_permissions(administrator=True)"},
+    {"trigger": "checks\tadmin_or_permissions(administrator=True)", "contents": "@checks.admin_or_permissions(administrator=True)"},
+    {"trigger": "checks\tis_owner()", "contents": "@checks.is_owner()"},
+
+    // sleep
+    {"trigger": "sleep\tawait asyncio.sleep()", "contents": "await asyncio.sleep(${1:1})"},
+
+    // save
+    {"trigger": "save\tfileIO(save_path, \"save\", data)", "contents": "fileIO(${1:save_path}, \"save\", ${2:data})"},
+
+    // load
+    {"trigger": "load\tfileIO(load_path, \"load\")", "contents": "${2:loaded_data} = fileIO(${1:load_path}, \"load\")"},
+
+
+    ]
+}

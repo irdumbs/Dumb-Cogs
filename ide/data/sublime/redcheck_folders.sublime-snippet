@@ -1,0 +1,15 @@
+<snippet>
+  <!-- Example: Hello, ${1:this} is a ${2:snippet}. -->
+  <content><![CDATA[
+def check_folders():
+    folder = "data/${1:cog_name}"
+    if not os.path.exists(folder):
+        print("Creating data/$1 folder...")
+        os.makedirs(folder)
+]]></content>
+  <!-- Optional: Set a tabTrigger to define how to trigger the snippet -->
+  <tabTrigger>check_folders</tabTrigger>
+  <description>Red cog check_folders</description>
+  <!-- Optional: Set a scope to limit where the snippet will trigger -->
+  <scope>source.python</scope>
+</snippet>

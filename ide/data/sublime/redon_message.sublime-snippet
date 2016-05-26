@@ -1,0 +1,16 @@
+<snippet>
+  <!-- Example: Hello, ${1:this} is a ${2:snippet}. -->
+  <content><![CDATA[
+async def on_message(self, message):
+    server = message.server
+    channel = message.channel
+    author = message.author
+    content = message.content
+
+]]></content>
+  <!-- Optional: Set a tabTrigger to define how to trigger the snippet -->
+  <tabTrigger>on_message</tabTrigger>
+  <description>Red cog on_message</description>
+  <!-- Optional: Set a scope to limit where the snippet will trigger -->
+  <scope>source.python</scope>
+</snippet>

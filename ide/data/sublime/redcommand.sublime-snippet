@@ -1,0 +1,17 @@
+<snippet>
+  <!-- Example: Hello, ${1:this} is a ${2:snippet}. -->
+  <content><![CDATA[
+@commands.command(pass_context=True${2:, no_pm=True})
+async def ${1:command_name}(self, ctx):
+    """description"""
+    server = ctx.message.server
+    channel = ctx.message.channel
+    author = ctx.message.author
+    
+]]></content>
+  <!-- Optional: Set a tabTrigger to define how to trigger the snippet -->
+  <tabTrigger>command</tabTrigger>
+  <description>Red cog command</description>
+  <!-- Optional: Set a scope to limit where the snippet will trigger -->
+  <scope>source.python, meta.function.decorator.python, entity.name.function.decorator.python</scope>
+</snippet>

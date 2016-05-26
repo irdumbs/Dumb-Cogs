@@ -1,0 +1,14 @@
+{
+    "scope": "source.python meta.function.python meta.function.parameters.python",
+
+    "completions":
+    [
+
+    // user
+    {"trigger": "user\tuser : discord.Member", "contents": "user : discord.Member${0:=None}"},
+    {"trigger": "role\trole : discord.Role", "contents": "role : discord.Role${0:=None}"},
+    {"trigger": "channel\tchannel : discord.Channel", "contents": "channel : discord.Channel${0:=None}"},
+
+
+    ]
+}

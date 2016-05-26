@@ -1,0 +1,13 @@
+<snippet>
+  <!-- Example: Hello, ${1:this} is a ${2:snippet}. -->
+  <content><![CDATA[
+def __init__(self, bot):
+    self.bot = bot
+    self.settings = fileIO("data/${1:cog_name}/settings.json", "load")
+]]></content>
+  <!-- Optional: Set a tabTrigger to define how to trigger the snippet -->
+  <tabTrigger>init</tabTrigger>
+  <description>Red cog __init__</description>
+  <!-- Optional: Set a scope to limit where the snippet will trigger -->
+  <scope>source.python</scope>
+</snippet>

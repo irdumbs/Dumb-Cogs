@@ -1,0 +1,15 @@
+<snippet>
+  <!-- Example: Hello, ${1:this} is a ${2:snippet}. -->
+  <content><![CDATA[
+def setup(bot):${2:
+    check_folders()
+    check_files()}
+    n = ${1:Cog_name}(bot)$3
+    bot.add_cog(n)
+]]></content>
+  <!-- Optional: Set a tabTrigger to define how to trigger the snippet -->
+  <tabTrigger>setup</tabTrigger>
+  <description>Red cog setup</description>
+  <!-- Optional: Set a scope to limit where the snippet will trigger -->
+  <scope>source.python, meta.function.python</scope>
+</snippet>

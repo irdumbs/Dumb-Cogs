@@ -1,0 +1,6 @@
+{
+    "AUTHOR" : "irdumb",
+    "DESCRIPTION" : "NOTICE: Cog under construction. Actual cog is empty at the moment.\n\nOnly useful components are the sublime snippets/completions in the data folder.\nPlace them in sublime's Packages/User folder and you're good to go.\nGet to the folder with: ctrl(cmd)+shift+p prefbrop",
+    "DISABLED" : false,
+    "NAME" : "Discord/Sublime IDE. UNDER CONSTRUCTION. read info."
+}
