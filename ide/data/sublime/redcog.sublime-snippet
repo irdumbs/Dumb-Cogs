@@ -21,20 +21,19 @@ class ${1/(.+)/\u$1/g}:
 
     @checks.mod_or_permissions(administrator=True)
     @commands.command(pass_context=True, no_pm=True)
-    async def ${5:command_name}(self, ctx):
-        """${6:description}"""
+    async def ${4:command_name}(self, ctx):
+        """${5:description}"""
         server = ctx.message.server
         channel = ctx.message.channel
         author = ctx.message.author
-        ${7:pass}${3:
-        
+        $6${3:
     async def on_message(self, message):
         server = message.server
         channel = message.channel
         author = message.author
         content = message.content
-        ${4:pass}}
-
+        }
+        
 def check_folders():
     folder = "data/${1:cog_name}"
     if not os.path.exists(folder):
