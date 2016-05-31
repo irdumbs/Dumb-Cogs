@@ -2967,7 +2967,7 @@ class Adventure:
             # I'm ok with \n at the beginning
         for msg in msgs:
             await asyncio.sleep(2)
-            await self.bot.send_message(dest,s)
+            await self.bot.send_message(dest,msg)
 
     # get leader and .. 1st mate? of a team
     # throws NoTeamMembers if no members in team left does not delete the team
