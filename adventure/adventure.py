@@ -2956,13 +2956,14 @@ class Adventure:
         while page_curs[1] < len(s):
             # find last \n
             page_curs = [find_curs, find_curs + max_char_per_page]
-            find_curs = s[page_curs[0]:page_curs[1]].rfind('\n') + page_curs[0]
-            if find_curs <= page_curs[0]:
-                # not found. find last ' '
-                find_curs = s[page_curs[0]:page_curs[1]].rfind(' ') + page_curs[0]
+            if page_curs[1] < len(s):
+                find_curs = s[page_curs[0]:page_curs[1]].rfind('\n') + page_curs[0]
                 if find_curs <= page_curs[0]:
-                    # not found. page at char
-                    find_curs = page_curs[1]
+                    # not found. find last ' '
+                    find_curs = s[page_curs[0]:page_curs[1]].rfind(' ') + page_curs[0]
+                    if find_curs <= page_curs[0]:
+                        # not found. page at char
+                        find_curs = page_curs[1]
             msgs.append(s[page_curs[0]:find_curs])
             # I'm ok with \n at the beginning
         for msg in msgs:
