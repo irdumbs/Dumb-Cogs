@@ -2964,6 +2964,8 @@ class Adventure:
                     if find_curs <= page_curs[0]:
                         # not found. page at char
                         find_curs = page_curs[1]
+            else:
+                find_curs = page_curs[1]
             msgs.append(s[page_curs[0]:find_curs])
             # I'm ok with \n at the beginning
         for msg in msgs:
