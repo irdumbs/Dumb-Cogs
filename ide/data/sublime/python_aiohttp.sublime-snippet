@@ -1,15 +1,12 @@
 <snippet>
   <!-- Example: Hello, ${1:this} is a ${2:snippet}. -->
   <content><![CDATA[
-def check_folders():
-    folder = "data/${1:cog_name}"
-    if not os.path.exists(folder):
-        print("Creating {} folder...".format(folder))
-        os.makedirs(folder)
+async with aiohttp.get(${1:url}) as ${2:r}:
+    ${3:${5:result} = await $2.${4:json()}}
 ]]></content>
   <!-- Optional: Set a tabTrigger to define how to trigger the snippet -->
-  <tabTrigger>check_folders</tabTrigger>
-  <description>Red cog check_folders</description>
+  <tabTrigger>aiohttp</tabTrigger>
+  <description>async with aiohttp.get() as r</description>
   <!-- Optional: Set a scope to limit where the snippet will trigger -->
   <scope>source.python</scope>
 </snippet>

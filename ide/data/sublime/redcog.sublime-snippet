@@ -18,26 +18,26 @@ class ${1/(.+)/\u$1/g}:
     def __init__(self, bot):
         self.bot = bot
         self.settings = fileIO("data/${1:cog_name}/settings.json", "load")
-
+    ${4:
     @checks.mod_or_permissions(administrator=True)
     @commands.command(pass_context=True, no_pm=True)
-    async def ${4:command_name}(self, ctx):
-        """${5:description}"""
+    async def ${5:command_name}(self, ctx):
+        """${6:description}"""
         server = ctx.message.server
         channel = ctx.message.channel
         author = ctx.message.author
-        $6${3:
+        }${3:
     async def on_message(self, message):
         server = message.server
         channel = message.channel
         author = message.author
         content = message.content
-        }
+        }$7
         
 def check_folders():
     folder = "data/${1:cog_name}"
     if not os.path.exists(folder):
-        print("Creating data/$1 folder...")
+        print("Creating {} folder...".format(folder))
         os.makedirs(folder)
 
 def check_files():
@@ -66,7 +66,7 @@ def setup(bot):
 ]]></content>
   <!-- Optional: Set a tabTrigger to define how to trigger the snippet -->
   <tabTrigger>cog</tabTrigger>
-  <description>Red cog skeleton</description>
+  <description>Red full cog</description>
   <!-- Optional: Set a scope to limit where the snippet will trigger -->
   <scope>source.python, keyword.control.import.python</scope>
 </snippet>
