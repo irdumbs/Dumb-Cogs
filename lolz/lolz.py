@@ -94,8 +94,8 @@ class Lolz:
     # Again, speak to the contributors if you have questions. More notably, Will(@tekulvw)
     def send_lolz(self, old_send):
         async def predicate(destination, content, *args, **kwargs):
-            channel_id = await self.bot._resolve_destination(destination)
-            channel = self.bot.get_channel(channel_id)
+            channel_ids = await self.bot._resolve_destination(destination)
+            channel = self.bot.get_channel(channel_ids[0])
             content = str(content)
 
             if (not channel.is_private and self.settings["SERVER"].get(channel.server.id, False)
