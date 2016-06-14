@@ -2393,7 +2393,7 @@ class Adventure:
 
     @commands.group(pass_context=True, aliases=['campsite'], no_pm=True)
     async def adventure(self, ctx):
-        """Greeting adventurer. What is it that you plan on doing today?"""
+        """Greetings adventurer. What is it that you plan on doing today?"""
         if ctx.invoked_subcommand is None:
             await send_cmd_help(ctx)
             return
@@ -2481,7 +2481,7 @@ class Adventure:
                     print('No team members in {} team. This should not be happening. If this continues to happen, please let irdumb know.'.format(team))
                     return
                 leaderstr = leaders[0].name + (" or " + leaders[1].name if len(leaders) == 2 else "")
-                await self.bot.say("{} You are not part of the {} team. {}would have to `{}recruit` you".format(author.mention, teamname, leaderstr, ctx.prefix))
+                await self.bot.say("{} You are not part of the {} team. {} would have to `{}team recruit` you".format(author.mention, teamname, leaderstr, ctx.prefix))
                 return
             else: # person is in the team
                 # check if person is in another team in the current channel. maybe just move him to this team
