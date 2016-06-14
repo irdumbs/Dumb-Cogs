@@ -94,12 +94,16 @@ class Lolz:
     # Again, speak to the contributors if you have questions. More notably, Will(@tekulvw)
     def send_lolz(self, old_send):
         async def predicate(destination, content, *args, **kwargs):
-            channel_ids = await self.bot._resolve_destination(destination)
-            channel = self.bot.get_channel(channel_ids[0])
             content = str(content)
-
-            if (not channel.is_private and self.settings["SERVER"].get(channel.server.id, False)
-                ) or (channel.is_private and self.settings["DM"].get(channel.user.id, False)):
+            # replaced _resolve_destination. assume not getting Object
+            channel = self.bot.get_channel(destination.id)
+            # channel should be PrivateChannel, Channel, or None here.
+            is_private = not hasattr(channel, 'is_private') or channel.is_private
+            server_on = not is_private and self.settings["SERVER"].get(channel.server.id, False)
+            dm_on = (channel and is_private and self.settings["DM"].get(channel.user.id, False)
+                ) or (channel is None and self.settings["DM"].get(destination.id, False))
+            
+            if server_on or dm_on:
                 # if not a link -- moved to sentence
                 content = self.translate_sentence(content)
             # msg = await old_send(self.bot, destination, content, *args,
