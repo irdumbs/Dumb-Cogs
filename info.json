@@ -1,7 +1,7 @@
 {
     "AUTHOR" : "irdumb and buds",
-    "INSTALL_MSG" : "No fancy msg here.. yet.\n\nYou've installed irdumb's cogs!\nbahahaha! sucks for you.\n\nAnyways, there be example cogs and community/QOL cogs. don't look at the community cogs for examples on how to code.. They're horribly done! ;)\n\nIf you have any questions/suggestions/bug reports, please let me know on the repo or on Red's server! \nglhf o/",
+    "INSTALL_MSG" : "No fancy msg here.. yet.\n\nYou've installed irdumb's cogs!\nbahahaha! sucks for you.\n\nAnyways, there be example cogs and community/QOL cogs. don't look at the community cogs for examples on how to code.. They're horribly done! ;)\n\nMake sure you read the cog/repo info: `[p]cog info Dumb-Cogs`\nIf you have any questions/suggestions/bug reports, please let me know on the repo or on Red's server! \nglhf o/",
     "NAME" : "Dumb-Cogs",
     "SHORT" : "some cog examples as well as various silly, QOL, and community-based cogs",
-    "DESCRIPTION" : "```diff\n!! WARNING !!\n```Most of these cogs were made with a specific server in mind.\n```diff\n!! WARNING !!\n```None of these cogs are guaranteed to work with Red.\n\nPlease read this for more information: https://github.com/irdumbs/Dumb-Cogs/blob/master/README.md"
+    "DESCRIPTION" : "```diff\n!! WARNING !!\n```Most of these cogs were made with a specific server in mind.\n\n```diff\n!! WARNING !!\n```None of these cogs are guaranteed to work with Red.\n\nPlease read this for more information: https://github.com/irdumbs/Dumb-Cogs/blob/master/README.md"
 }
