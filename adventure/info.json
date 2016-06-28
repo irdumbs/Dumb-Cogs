@@ -1,6 +1,7 @@
 {
-    "AUTHOR" : "irdumb",
+    "AUTHOR" : "irdumb. Original port from Brandon Rhodes",
+    "INSTALL_MSG" : "You have decided to embark on an adventure!\n\nAs you begin your journey, you become greatly confused as this cog is still very much in beta.\n As you stand there dazed, a passing wise-man motions you to read the `[p]cog info Dumb-Cogs adventure` sign on the side of the road. As soon as you look in that direction, he dissapears in a puff of smoke! leaving behind the trace sounds of 2 magical words.. `[p]help Adventure`\n\nYou believe you are ready to embark on your adventure now. Perhaps you should bring some friends with you.",
+    "NAME" : "Adventure (Colossal Cave)",
+    "SHORT" : "Port of the original text adventure game",
     "DESCRIPTION" : "WARNING: Cog is in beta. Missing functions and no guarantee it works.\n\nPlease submit issues if you find any bugs or have suggestions.",
-    "DISABLED" : false,
-    "NAME" : "Port of the original text adventure game"
 }
