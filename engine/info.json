@@ -1,6 +1,7 @@
 {
     "AUTHOR" : "irdumb",
+    "INSTALL_MSG" : "Really? Why would you install this? did you even read the `[p]cog info Dumb-Cogs engine`?",
+    "NAME" : "Engine",
+    "SHORT" : "the most basic cog example",
     "DESCRIPTION" : "an utterly useless gag cog that is now used as a super simple example for 1st time cog creators",
-    "DISABLED" : false,
-    "NAME" : "basic cog example"
 }
