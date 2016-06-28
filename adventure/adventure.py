@@ -1,7 +1,7 @@
 # LICENSE and credit info:
 # Python Port Source: https://github.com/brandon-rhodes/python-adventure
 # 
-# Red Port of Brandon Rhode's python port of The Adventure game.
+# Red Port of Brandon Rhodes's python port of The Adventure game.
 # Copyright 2016 irdumbs. Licensed under the Apache License, Version 2.0 (the "License")
 # ^ am I doing it right?
 # 
