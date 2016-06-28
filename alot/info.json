@@ -1,6 +1,7 @@
 {
     "AUTHOR" : "irdumb",
-    "DESCRIPTION" : "WARNING: Cog is not channel or server-specific yet. It will respond to all servers the bot is in.\n\nInvites all alots to your servers.\nAlso silently mentions them whenever someone says their name so that they pop into chat to see why people keep calling them.",
-    "DISABLED" : false,
-    "NAME" : "Invites all alots to your servers."
+    "INSTALL_MSG" : "You've let the a\u200blots loose! You must have a bunch of people calling for them huh?\nDon't worry, there's one line of defense left. Yell `[p]alot` at the top of your lungs! That'll keep them at bay :thumbsup:",
+    "NAME" : "A\u200blot",
+    "SHORT" : "Invites all a\u200blots to your servers.",
+    "DESCRIPTION" : "Invites all alots to your servers.\nAlso silently mentions them whenever someone says their name so that they pop into chat to see why people keep calling them."
 }
