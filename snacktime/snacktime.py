@@ -279,13 +279,14 @@ class Snacktime:
         if not self.channels.get(scid,False):
             return
         if self.loop == None:
-            try: 
+            try:
                 self.loop = asyncio.get_event_loop()
             except:
                 print("Error: Not able to get event loop")
                 return
 
         if message.author.id != self.bot.user.id:
+            self.econ = self.bot.get_cog('Economy')
             #if nobody has said anything since start
             if self.previousSpeaker.get(scid,None) == None:
                 self.previousSpeaker[scid] = message.author.id
@@ -359,13 +360,13 @@ class Snacktime:
                         self.alreadySnacked[scid].append(message.author.id)
                         await asyncio.sleep(randint(1,6))
                         snackAmt = randint(1,self.settings[scid]["SNACK_AMOUNT"])
-                        if self.econ.account_check(message.author.id):
+                        if self.econ.bank.account_exists(message.author):
                             try:
                                 if self.acceptInput.get(scid,False):
                                     await self.bot.send_message(message.channel, randchoice(self.givePhrases).format(message.author.name,snackAmt))
                                 else:
                                     await self.bot.send_message(message.channel, randchoice(self.lastsecondPhrases).format(message.author.name,snackAmt))
-                                self.econ.add_money(message.author.id, snackAmt)
+                                self.econ.bank.deposit_credits(message.author, snackAmt)
                             except:
                                 print("Failed to send message. " + message.author.name + " didn't get pb")
 
