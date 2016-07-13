@@ -13,7 +13,7 @@ from __main__ import send_cmd_help
 class Economytrickle:
 	"""Economy Trickle
 
-	Gives Economy.py currency to active members every so often. 
+	Gives Economy.py currency to active members every so often.
 	The more people active, the more currency to go around!
 	This cog is dependant on Economy.py; Future updates to Economy.py may break this cog.
 	"""
@@ -26,13 +26,13 @@ class Economytrickle:
 		self.tricklePot = {}
 		self.previousDrip = {}
 		self.defaultSettings = {"TRICKLE_BOT" : False, "NEW_ACTIVE_BONUS" : 1, "ACTIVE_BONUS_DEFLATE" : 1, "PAYOUT_INTERVAL" : 2, "CHANCE_TO_PAYOUT" : 50, "PAYOUT_PER_ACTIVE" : 1, "ACTIVE_TIMEOUT" : 10}
-	
+
 
 	@commands.group(pass_context=True)
 	@checks.mod_or_permissions(manage_server=True)
 	async def trickleset(self, ctx):
 		"""Changes economy trickle settings
-		Trickle amount: 
+		Trickle amount:
 			(# active users - 1) x multiplier + bonus pot
 		Every active user gets the trickle amount. It is not distributed between active users.
 		"""
@@ -50,8 +50,7 @@ class Economytrickle:
 		"""Enables/disables trickling economy to the bot"""
 		sid = ctx.message.server.id
 		econ = self.bot.get_cog('Economy')
-		botuser = self.bot.user
-		if botuser.id in econ.bank:
+		if econ.bank.account_exists(ctx.message.server.me):
 			self.settings[sid]["TRICKLE_BOT"] = not self.settings[sid]["TRICKLE_BOT"]
 			if self.settings[sid]["TRICKLE_BOT"]:
 				await self.bot.say("I will now get currency trickled to me.")
@@ -134,30 +133,24 @@ class Economytrickle:
 		self.settings[sid]["CHANCE_TO_PAYOUT"] = percentage
 		await self.bot.say("Successful trickle chance is now: " + str(self.settings[sid]["CHANCE_TO_PAYOUT"]))
 		fileIO("data/economytrickle/settings.json", "save", self.settings)
- 
+
  	#if Economy.py updates, this may break
 	@commands.command(pass_context=True)
 	@checks.is_owner()
 	async def registerbot(self, ctx, agree : str):
-		"""registers the bot into Economy.py bank. 
+		"""registers the bot into Economy.py bank.
 
-		WARNING: Edits Economy.py's bank.json file.
-		If Economy.py is updated in the future with a different format for bank.json, the data in bank.json (everyone's balances) may be lost.
-
-		This command will try to save a backup in data/economytrickle/bank-backup.json in case that happens.
+		Although nothing bad will probably happen, this was not how Economy was intended.
+		I can't guarantee this and/or the economy cog won't break. I can't gaurantee your bank won't get corrupted.
 		If you understand this and still want to register your bot in the bank, type
 		registerbot "I have read and understand. Just give my bot money!"
-
 		"""
 		if agree.lower() == "i have read and understand. just give my bot money!":
 			econ = self.bot.get_cog('Economy')
-			bank = econ.bank
-			botuser = self.bot.user
-			if botuser.id not in bank:
-				fileIO("data/economytrickle/bank-backup.json", "save", bank)
-				bank[botuser.id] = {"name" : botuser.name, "balance" : 100}
-				fileIO("data/economy/bank.json", "save", bank)
-				await self.bot.say("Account opened for {}. Current balance: {}".format(botuser.mention, str(bank[botuser.id]["balance"])))
+			botuser = ctx.message.server.me
+			if not econ.bank.account_exists(botuser):
+				econ.bank.create_account(botuser)
+				await self.bot.say("Account opened for {}. Current balance: {}".format(botuser.mention, econ.bank.get_balance(botuser)))
 			else:
 				await self.bot.say("{} already has an account at the Twentysix bank.".format(botuser.mention))
 		else:
@@ -211,8 +204,8 @@ class Economytrickle:
 				#debug
 				debug = message.server.name + " - trickle: " + str(trickleAmt) + " > "
 				expireTime = now - datetime.timedelta(minutes=self.settings[sid]["ACTIVE_TIMEOUT"])
-				
-				econ = None
+
+				econ = None  # <-- lol wtf who write this ( ͡° ͜ʖ ͡°)
 				econ = self.bot.get_cog('Economy')
 				if econ == None:
 					print("--- Error: Was not able to load Economy cog into Economytrickle. ---")
@@ -220,11 +213,12 @@ class Economytrickle:
 				#print(message.author.id + " " + message.author.name)
 				templist = []
 				for u in self.activeUsers[sid].keys():
+					us = message.server.get_member(u)
 					#print(str(now) + " | " + str(self.activeUsers[u]) + " " + str(expireTime) + str(self.activeUsers[u] > expireTime))
 					if self.activeUsers[sid][u] < expireTime:
 						templist.append(u)
-					elif econ.account_check(u):
-						econ.add_money(u, trickleAmt)
+					elif econ.bank.account_exists(us):
+						econ.bank.deposit_credits(us, trickleAmt)
 						#debug
 						debug += message.server._members[u].name + ", "
 				#debug
@@ -253,7 +247,7 @@ def check_files():
 	f = "data/economytrickle/settings.json"
 	if not fileIO(f, "check"):
 		print("Creating empty economytrickle's settings.json...")
-		fileIO(f, "save", serverSettings)	
+		fileIO(f, "save", serverSettings)
 
 
 #unload cog if economy isn't loaded
