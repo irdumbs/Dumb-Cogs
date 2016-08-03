@@ -80,7 +80,6 @@ class Alot:
 
         matchedKeys = re.findall(self.keyRegex,lowerm)
         matchedTags = []
-        print(matchedKeys)
         for k in matchedKeys:
             vals = self.alotTags[k]
             for tag in vals:
