@@ -41,7 +41,7 @@ class Alot:
         #default off.
         server = ctx.message.server
         if server.id not in self.settings["SERVERS"]:
-            self.settings["SERVERS"][server.id] = False
+            self.settings["SERVERS"][server.id] = True
         else:
             self.settings["SERVERS"][server.id] = not self.settings["SERVERS"][server.id]
         #for a toggle, settings should save here in case bot fails to send message
