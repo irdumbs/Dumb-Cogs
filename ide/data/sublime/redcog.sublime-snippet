@@ -17,7 +17,7 @@ class ${1/(.+)/\u$1/g}:
 
     def __init__(self, bot):
         self.bot = bot
-        self.settings = fileIO("data/${1:cog_name}/settings.json", "load")
+        self.settings = dataIO.load_json("data/${1:cog_name}/settings.json")
     ${4:
     @checks.mod_or_permissions(administrator=True)
     @commands.command(pass_context=True, no_pm=True)
