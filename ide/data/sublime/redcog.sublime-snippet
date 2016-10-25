@@ -33,29 +33,30 @@ class ${1/(.+)/\u$1/g}:
         author = message.author
         content = message.content
         }$7
-        
+
 def check_folders():
-    folder = "data/${1:cog_name}"
-    if not os.path.exists(folder):
-        print("Creating {} folder...".format(folder))
-        os.makedirs(folder)
+    paths = ("data/${1:cog_name}", )
+    for path in paths:
+      if not os.path.exists(path):
+          print("Creating {} folder...".format(path))
+          os.makedirs(path)
 
 def check_files():
     default = {}
-    settings_path = "data/$1/settings.json"
+    settings_path = "data/${1:cog_name}/settings.json"
 
-    if not os.path.isfile(settings_path):
+    if not dataIO.is_valid_json(settings_path):
         print("Creating default $1 settings.json...")
-        fileIO(settings_path, "save", default)
+        dataIO.save_json(settings_path, default)
     else:  # consistency check
-        current = fileIO(settings_path, "load")
+        current = dataIO.load_json(settings_path)
         if current.keys() != default.keys():
             for key in default.keys():
                 if key not in current.keys():
                     current[key] = default[key]
                     print(
                         "Adding " + str(key) + " field to $1 settings.json")
-            fileIO(settings_path, "save", current)
+            dataIO.save_json(settings_path, current)
 
 def setup(bot):
     check_folders()
