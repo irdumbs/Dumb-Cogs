@@ -11,13 +11,15 @@ import aiohttp
 from random import randint
 from random import choice as randchoice
 
+SETTINGS_PATH = "data/${1:cog_name}/settings.json"
+
 
 class ${1/(.+)/\u$1/g}:
     """${2:description}"""
 
     def __init__(self, bot):
         self.bot = bot
-        self.settings = dataIO.load_json("data/${1:cog_name}/settings.json")
+        self.settings = dataIO.load_json(SETTINGS_PATH)
     ${4:
     @checks.mod_or_permissions(administrator=True)
     @commands.command(pass_context=True, no_pm=True)
@@ -43,20 +45,19 @@ def check_folders():
 
 def check_files():
     default = {}
-    settings_path = "data/${1:cog_name}/settings.json"
 
-    if not dataIO.is_valid_json(settings_path):
+    if not dataIO.is_valid_json(SETTINGS_PATH):
         print("Creating default $1 settings.json...")
-        dataIO.save_json(settings_path, default)
+        dataIO.save_json(SETTINGS_PATH, default)
     else:  # consistency check
-        current = dataIO.load_json(settings_path)
+        current = dataIO.load_json(SETTINGS_PATH)
         if current.keys() != default.keys():
             for key in default.keys():
                 if key not in current.keys():
                     current[key] = default[key]
                     print(
                         "Adding " + str(key) + " field to $1 settings.json")
-            dataIO.save_json(settings_path, current)
+            dataIO.save_json(SETTINGS_PATH, current)
 
 def setup(bot):
     check_folders()
