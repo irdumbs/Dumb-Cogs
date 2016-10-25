@@ -2,10 +2,11 @@
   <!-- Example: Hello, ${1:this} is a ${2:snippet}. -->
   <content><![CDATA[
 def check_folders():
-    folder = "data/${1:cog_name}"
-    if not os.path.exists(folder):
-        print("Creating {} folder...".format(folder))
-        os.makedirs(folder)
+    paths = ("data/${1:cog_name}", )
+    for path in paths:
+      if not os.path.exists(path):
+          print("Creating {} folder...".format(path))
+          os.makedirs(path)
 ]]></content>
   <!-- Optional: Set a tabTrigger to define how to trigger the snippet -->
   <tabTrigger>check_folders</tabTrigger>

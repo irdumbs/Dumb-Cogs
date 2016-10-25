@@ -27,10 +27,10 @@
     {"trigger": "sleep\tawait asyncio.sleep()", "contents": "await asyncio.sleep(${1:1})"},
 
     // save
-    {"trigger": "save\tfileIO(save_path, \"save\", data)", "contents": "fileIO(${1:save_path}, \"save\", ${2:data})"},
+    {"trigger": "save\tdataIO.save_json(save_path, data)", "contents": "dataIO.save_json(${1:save_path}, ${2:data})"},
 
     // load
-    {"trigger": "load\tfileIO(load_path, \"load\")", "contents": "${2:loaded_data} = fileIO(${1:load_path}, \"load\")"},
+    {"trigger": "load\tdataIO.load_json(load_path)", "contents": "${2:loaded_data} = dataIO.load_json(${1:load_path})"},
 
 
     ]
