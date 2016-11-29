@@ -77,7 +77,7 @@ class Hal:
             if audio.music_player.is_done():
                 link = "https://www.youtube.com/watch?v=hchUl3QlJZE"
                 # probably dont need. just too lazy to check.
-                ctx.message.content = "{}play {}".format(self.bot.command_prefix[0],link)
+                ctx.message.content = "{}play {}".format(ctx.prefix, link)
                 if await audio.check_voice(ctx.message.author, ctx.message):
                     audio.queue.append(link)
 
