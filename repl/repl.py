@@ -193,16 +193,16 @@ def check_files():
 
     if not os.path.isfile(settings_path):
         print("Creating default repl settings.json...")
-        fileIO(settings_path, "save", default)
+        dataIO.save_json(settings_path, default)
     else:  # consistency check
-        current = fileIO(settings_path, "load")
+        current = dataIO.load_json(settings_path)
         if current.keys() != default.keys():
             for key in default.keys():
                 if key not in current.keys():
                     current[key] = default[key]
                     print(
                         "Adding " + str(key) + " field to repl settings.json")
-            fileIO(settings_path, "save", current)
+            dataIO.save_json(settings_path, current)
 
 
 def setup(bot):
