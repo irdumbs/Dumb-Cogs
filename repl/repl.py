@@ -1,4 +1,5 @@
 from discord.ext import commands
+import red
 from cogs.utils import checks
 from cogs.utils.dataIO import dataIO
 from cogs.utils.chat_formatting import pagify
@@ -205,7 +206,7 @@ def check_files():
             dataIO.save_json(settings_path, current)
 
 
-def setup(bot):
+def setup(bot: red.Bot):
     check_folders()
     check_files()
     bot.add_cog(REPL(bot))
