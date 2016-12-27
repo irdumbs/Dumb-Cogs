@@ -14,6 +14,8 @@ import subprocess
 
 # TODO: rtfs
 #   * functionify
+#   * commandify
+#   * option to open in text editor
 #   * Cogs
 #   * path/file.py
 #   * cog info / author
