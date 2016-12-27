@@ -1,6 +1,6 @@
 from discord.ext import commands
 from cogs.utils import checks
-from cogs.utils.dataIO import fileIO
+from cogs.utils.dataIO import dataIO
 from cogs.utils.chat_formatting import pagify
 import asyncio
 import traceback
@@ -23,7 +23,7 @@ import subprocess
 class REPL:
     def __init__(self, bot):
         self.bot = bot
-        self.settings = fileIO('data/repl/settings.json', "load")
+        self.settings = dataIO.load_json('data/repl/settings.json')
         self.output_file = "data/repl/temp_output.txt"
         self.sessions = set()
 
@@ -176,7 +176,7 @@ class REPL:
                 await self.bot.say("output will be opened with: {} {}".format(answer,self.output_file))
             self.settings['OPEN_CMD'] = answer
         self.settings["OUTPUT_REDIRECT"] = discord_console_file
-        fileIO("data/repl/settings.json", "save", self.settings)
+        dataIO.save_json("data/repl/settings.json", self.settings)
         await self.bot.say("repl overflow will now go to "+discord_console_file)
 
 
