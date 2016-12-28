@@ -129,14 +129,14 @@ class REPL:
                         result = await result
             except Exception as e:
                 value = stdout.getvalue()
-                fmt = '```py\n{}{}\n```'.format(value, traceback.format_exc())
+                fmt = '{}{}'.format(value, traceback.format_exc())
             else:
                 value = stdout.getvalue()
                 if result is not None:
-                    fmt = '```py\n{}{}\n```'.format(value, result)
+                    fmt = '{}{}'.format(value, result)
                     variables['_'] = result
                 elif value:
-                    fmt = '```py\n{}\n```'.format(value)
+                    fmt = '{}'.format(value)
 
             try:
                 if fmt is not None:
