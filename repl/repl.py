@@ -44,13 +44,13 @@ class REPL:
 
     async def print_results(self, ctx, results):
         msg = ctx.message
-        fmt = '```py\n{}\n```'
-        if len(fmt.format(results)) > 2000:
+        discord_fmt = '```py\n{}\n```'
+        if len(discord_fmt.format(results)) > 2000:
             if self.settings["OUTPUT_REDIRECT"] == "pm":
                 await self.bot.send_message(msg.channel, 'Content too big. Check your PMs')
                 enough_paper = 20
                 for page in pagify(results, ['\n', ' '], shorten_by=12):
-                    await self.bot.send_message(msg.author, fmt.format(page))
+                    await self.bot.send_message(msg.author, discord_fmt.format(page))
                     enough_paper -= 1
                     if not enough_paper:
                         await self.bot.send_message(msg.author, "**Too many pages! Think of the trees!**")
@@ -66,7 +66,7 @@ class REPL:
                 if open_cmd:
                     subprocess.Popen([open_cmd, self.output_file])
         else:
-            await self.bot.send_message(msg.channel, fmt.format(results))
+            await self.bot.send_message(msg.channel, discord_fmt.format(results))
 
     @commands.command(pass_context=True, hidden=True)
     @checks.is_owner()
