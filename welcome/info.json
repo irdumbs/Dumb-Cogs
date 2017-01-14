@@ -1,0 +1,5 @@
+{
+    "AUTHOR" : "irdumb",
+    "DESCRIPTION" : "When a new user joins, the bot will send a customized message to the channel of your choice",
+    "NAME" : "Welcomes new users to your server(s)"
+}
