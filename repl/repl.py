@@ -44,7 +44,8 @@ class REPL:
 
     async def print_results(self, ctx, results):
         msg = ctx.message
-        discord_fmt = '```py\n{}\n```'
+        nbs = '​'
+        discord_fmt = nbs+'```py\n{}\n```'
         if len(discord_fmt.format(results)) > 2000:
             if self.settings["OUTPUT_REDIRECT"] == "pm":
                 await self.bot.send_message(msg.channel, 'Content too big. Check your PMs')
