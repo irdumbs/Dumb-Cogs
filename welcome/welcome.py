@@ -101,7 +101,7 @@ class Welcome:
         server = ctx.message.server
         msg = 'Welcome messages:\n\n'
         for c, m in enumerate(self.settings[server.id]["GREETING"]):
-            msg += "  {}. {}".format(c, m)
+            msg += "  {}. {}\n".format(c, m)
         for page in pagify(msg, ['\n', ' '], shorten_by=20):
             await self.bot.say("```\n{}\n```".format(page))
 
