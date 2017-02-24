@@ -4,6 +4,7 @@ from .utils.dataIO import fileIO
 from .utils import checks
 from .utils.chat_formatting import pagify
 from __main__ import send_cmd_help
+from copy import deepcopy
 import os
 from random import choice as rand_choice
 
@@ -28,7 +29,7 @@ class Welcome:
         """Sets welcome module settings"""
         server = ctx.message.server
         if server.id not in self.settings:
-            self.settings[server.id] = default_settings
+            self.settings[server.id] = deepcopy(default_settings)
             self.settings[server.id]["CHANNEL"] = server.default_channel.id
             fileIO(settings_path, "save", self.settings)
         if ctx.invoked_subcommand is None:
@@ -208,7 +209,7 @@ class Welcome:
     async def member_join(self, member):
         server = member.server
         if server.id not in self.settings:
-            self.settings[server.id] = default_settings
+            self.settings[server.id] = deepcopy(default_settings)
             self.settings[server.id]["CHANNEL"] = server.default_channel.id
             fileIO(settings_path, "save", self.settings)
         if not self.settings[server.id]["ON"]:
@@ -318,7 +319,7 @@ def check_files():
             if v.keys() != default_settings.keys():
                 for key in default_settings.keys():
                     if key not in v.keys():
-                        current[k][key] = default_settings[key]
+                        current[k][key] = deepcopy(default_settings)[key]
                         print("Adding " + str(key) +
                               " field to welcome settings.json")
         # upgrade. Before GREETING was 1 string
