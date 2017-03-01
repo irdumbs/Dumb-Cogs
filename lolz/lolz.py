@@ -12,17 +12,17 @@
 
 # Credit for idea/implementation: Will(@tekulvw) / Nikki(@cookiezeater) / Mash(@Canule) / irdumb(@irdumbs)
 
-import asyncio
 
 from discord.ext import commands
 import discord.utils
 from .utils.dataIO import fileIO
 import logging
+import asyncio
 import re
 import os
 from random import randint
-from __main__ import settings
 from copy import deepcopy
+from __main__ import settings
 
 
 log = logging.getLogger(__name__)
@@ -59,6 +59,8 @@ class Lolz:
         self.cached = {}
         self.settings = fileIO("data/lolz/settings.json", "load")
         self.tranzlashun = fileIO("data/lolz/tranzlashun.json", "load")
+
+        self._monkeymanager = self.bot.loop.create_task(self.patcher())
 
         # object independant send_message. do not overwrite
         # self.old_send = commands.Bot.send_message
@@ -227,20 +229,26 @@ class Lolz:
             new_sentence += word + space
         return new_sentence
 
-    async def lolz_oh_crap_revert(self):
-        await asyncio.sleep(6)  # be safe lolz
-        while "Lolz" in self.bot.cogs:
-            # this checks if overwritten by same process(adding an old), undefined behavior if some other cog overwrites the same way.
-            if not hasattr(self.bot.send_message, 'old'):
-                print(
-                    '[WARNING:] -- Overwriting bot.send_message with '
-                    'send_lolz. If bot.send_message is not reloaded,')
-                print(
-                    '[WARNING:] -- in the event of a crash of the lolz cog, '
-                    'you may not be able revert to bot.send_message without a '
-                    'restart/reloading lolz')
-                self.bot.send_message = self.send_lolz(self.bot.send_message)
-            await asyncio.sleep(1)
+    async def patcher(self):
+        await self.bot.wait_until_ready()
+        try:
+            await asyncio.sleep(6)  # be safe lolz
+            while True:
+                if not hasattr(self.bot.send_message, 'old'):
+                    print(
+                        '[WARNING:] -- Overwriting bot.send_message with '
+                        'send_lolz. If bot.send_message is not reloaded,')
+                    print(
+                        '[WARNING:] -- in the event of a crash of the lolz '
+                        'cog, you may not be able revert to bot.send_message '
+                        'without a restart/reloading lolz')
+                    self.bot.send_message = self.send_lolz(self.bot.send_message)
+                await asyncio.sleep(1)
+        except asyncio.CancelledError:
+            pass
+
+    def __unload(self):
+        self._monkeymanager.cancel()
         # revert any changes done with this method. we should check instead for only lolz override
         if hasattr(self.bot.send_message, 'old'):
             print('[CLEANUP:] -- Trying to reload old self.bot.send_message')
@@ -270,7 +278,7 @@ def check_folders():
         os.makedirs("data/lolz")
 
 
-def check_files(bot):
+def check_files():
     settings_path = "data/lolz/settings.json"
 
     if not os.path.isfile(settings_path):
@@ -288,7 +296,5 @@ def check_files(bot):
 
 def setup(bot):
     check_folders()
-    check_files(bot)
-    n = Lolz(bot)
-    bot.add_cog(n)
-    bot.loop.create_task(n.lolz_oh_crap_revert())
+    check_files()
+    bot.add_cog(Lolz(bot))
