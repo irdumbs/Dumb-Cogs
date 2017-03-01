@@ -22,6 +22,7 @@ import re
 import os
 from random import randint
 from __main__ import settings
+from copy import deepcopy
 
 
 log = logging.getLogger(__name__)
@@ -89,12 +90,15 @@ class Lolz:
     # This is bad. If you're reading this, you're probably trying to find out how it does what it does.
     # Please head to Red's #testing/#coding channels and ask for help from the contributors listed above
     # We do not recommend doing this. If multiple cogs start doing this, things will be very messy and very buggy
-    # We do not have a standard/protocol yet on how to communicate these changes between cogs. 
+    # We do not have a standard/protocol yet on how to communicate these changes between cogs.
     # We will be very leery of doing so, as this is a BAD programming practice.
     # Again, speak to the contributors if you have questions. More notably, Will(@tekulvw)
     def send_lolz(self, old_send):
-        async def predicate(destination, content, *args, **kwargs):
-            content = str(content)
+        async def predicate(destination, content=None, *args, **kwargs):
+
+            embed = kwargs.get('embed', None)
+            content = content and str(content)
+
             # replaced _resolve_destination. assume not getting Object
             channel = self.bot.get_channel(destination.id)
             # channel should be PrivateChannel, Channel, or None here.
@@ -102,10 +106,14 @@ class Lolz:
             server_on = not is_private and self.settings["SERVER"].get(channel.server.id, False)
             dm_on = (channel and is_private and self.settings["DM"].get(channel.user.id, False)
                 ) or (channel is None and self.settings["DM"].get(destination.id, False))
-            
+
             if server_on or dm_on:
-                # if not a link -- moved to sentence
-                content = self.translate_sentence(content)
+                if content:
+                    # if not a link -- moved to sentence
+                    content = self.translate_sentence(content)
+                if embed:
+                    self.in_place_translate_embed(embed)
+
             # msg = await old_send(self.bot, destination, content, *args,
             # **kwargs)
             msg = await old_send(destination, content, *args, **kwargs)
@@ -114,6 +122,40 @@ class Lolz:
         predicate.old = old_send
 
         return predicate
+
+    def in_place_translate_embed(self, embed):
+        # not sure what provider is
+        # assuming patterns. thought it'd make it easier to maintain.
+        # will probably make it harder..
+        safe_attrs = ('title', 'description',
+                      'author', 'name',
+                      'footer', 'text',
+                      'fields', 'name', 'value')
+        view = deepcopy(embed.to_dict())
+
+        def translate_dict(d):
+            return {attr: self.translate_sentence(val)
+                    for attr, val in d.items()
+                    if attr in safe_attrs}
+
+        for k, v in view.items():
+            if k not in safe_attrs:
+                # only try to translate the safe attributes
+                continue
+            if isinstance(v, str):
+                # strings are safe to go
+                setattr(embed, k, self.translate_sentence(v))
+            elif isinstance(v, dict):
+                # all dict representations have a cooresponding set_arg function
+                f = getattr(embed, 'set_' + k)
+                lolzd = translate_dict(v)
+                f(**lolzd)
+            elif isinstance(v, list):
+                # all list representations have a set_arg_at where arg is singular
+                f = getattr(embed, 'set_' + k[:-1] + '_at')
+                for i, d in enumerate(v):
+                    lolzd = translate_dict(d)
+                    f(i, **lolzd)
 
     # add randomization from Nikki's link. see todo
 
@@ -210,6 +252,7 @@ class Lolz:
                 '[CLEANUP:] -- If that is the case, the bot may need to be '
                 'restarted')
 
+
 def check_mod(ctx):
     if ctx.message.author.id == settings.owner:
         return True
@@ -219,6 +262,7 @@ def check_mod(ctx):
     author = ctx.message.author
     role = discord.utils.find(lambda r: r.name.lower() in (mod_role,admin_role), author.roles)
     return role is not None
+
 
 def check_folders():
     if not os.path.exists("data/lolz"):
