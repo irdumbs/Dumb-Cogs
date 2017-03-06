@@ -133,14 +133,6 @@ class Lolz:
         predicate.old = old_edit
         return predicate
 
-    def translate_message(self, content=None, embed=None):
-        if content:
-            # if not a link -- moved to sentence
-            content = self.translate_sentence(content)
-        if embed:
-            self.in_place_translate_embed(embed)
-        content = LOLZ_PREFIX + (content or '')  # for tracking
-
     def can_lolz(self, chan_or_id):
         # channel should be PrivateChannel, Channel, or id.
         if isinstance(chan_or_id, str):
@@ -156,6 +148,15 @@ class Lolz:
                  self.settings["DM"].get(chan_or_id.user.id, False))
 
         return server_on or dm_on
+
+    def translate_message(self, content=None, embed=None):
+        if content:
+            # if not a link -- moved to sentence
+            content = self.translate_sentence(content)
+        if embed:
+            self.in_place_translate_embed(embed)
+        content = LOLZ_PREFIX + (content or '')  # for tracking
+        return content, embed
 
     def in_place_translate_embed(self, embed):
         # not sure what provider is
@@ -276,6 +277,17 @@ class Lolz:
         except asyncio.CancelledError:
             pass
 
+    def __unload(self):
+        self._monkeymanager.cancel()
+        # revert any changes done with this method. we should check instead for only lolz override
+        if hasattr(self.bot.send_message, 'old'):
+            self.info_prompt('TRY_CLEANUP', 'send_message')
+            self.bot.send_message = self.bot.send_message.old
+        if hasattr(self.bot.edit_message, 'old'):
+            self.info_prompt('TRY_CLEANUP', 'edit_message')
+            self.bot.edit_message = self.bot.edit_message.old
+        self.info_prompt('DONE', 'send_message')
+
     def info_prompt(self, option, func_name):
         if option == 'WARNING':
             print('[WARNING:] -- Overwriting bot.{0} with send_lolz. '
@@ -290,17 +302,6 @@ class Lolz:
                   'unless the lolz cog crashed without cleaning up')
             print('[CLEANUP:] -- If that is the case, the bot may need to be '
                   'restarted')
-
-    def __unload(self):
-        self._monkeymanager.cancel()
-        # revert any changes done with this method. we should check instead for only lolz override
-        if hasattr(self.bot.send_message, 'old'):
-            self.info_prompt('TRY_CLEANUP', 'send_message')
-            self.bot.send_message = self.bot.send_message.old
-        if hasattr(self.bot.edit_message, 'old'):
-            self.info_prompt('TRY_CLEANUP', 'edit_message')
-            self.bot.edit_message = self.bot.edit_message.old
-        self.info_prompt('DONE', 'send_message')
 
     async def on_message(self, message):
         chan_or_id = message.channel or message.author.id
