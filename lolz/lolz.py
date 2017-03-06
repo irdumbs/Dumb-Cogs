@@ -306,17 +306,13 @@ class Lolz:
     async def on_message(self, message):
         chan_or_id = message.channel or message.author.id
 
-        if not self.bot.user.bot:
-            print("{}: not a selfbot".format(message.author))
+        if self.bot.user.bot:
             return
         if self.bot.user != message.author:
-            print("{}: not the author".format(message.author))
             return
         if not self.can_lolz(chan_or_id):
-            print("{}: can't lolz".format(message.channel))
             return
         if message.content.startswith(LOLZ_PREFIX):
-            print("{}: already lolzed".format(message.content))
             return
 
         embed = message.embeds[0] if len(message.embeds) else None
