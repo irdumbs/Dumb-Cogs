@@ -107,7 +107,7 @@ class Lolz:
             chan_or_id = self.bot.get_channel(destination.id) or destination.id
             # channel should be PrivateChannel, Channel, or id here.
             if self.can_lolz(chan_or_id):
-                self.translate_message(content, embed)
+                content, embed = self.translate_message(content, embed)
 
             # msg = await old_send(self.bot, destination, content, *args,
             # **kwargs)
@@ -125,7 +125,7 @@ class Lolz:
             chan_or_id = message.channel or message.author.id
 
             if self.can_lolz(chan_or_id):
-                self.translate_message(content, embed)
+                content, embed = self.translate_message(content, embed)
 
             msg = await old_edit(message, content, *args, **kwargs)
             return msg
@@ -142,15 +142,18 @@ class Lolz:
         content = LOLZ_PREFIX + (content or '')  # for tracking
 
     def can_lolz(self, chan_or_id):
+        # channel should be PrivateChannel, Channel, or id.
+        if isinstance(chan_or_id, str):
+            return self.settings["DM"].get(chan_or_id, False)
+
+        # if no is_private, it should be private.
+        # might not be relevant with the above handling strings
         is_private = getattr(chan_or_id, 'is_private', True)
         server_on = (not is_private and
                      self.settings["SERVER"].get(chan_or_id.server.id, False))
 
-        if isinstance(chan_or_id, str):
-            dm_on = self.settings["DM"].get(chan_or_id, False)
-        else:
-            dm_on = (is_private and
-                     self.settings["DM"].get(chan_or_id.user.id, False))
+        dm_on = (is_private and
+                 self.settings["DM"].get(chan_or_id.user.id, False))
 
         return server_on or dm_on
 
@@ -265,24 +268,23 @@ class Lolz:
             while True:
                 await asyncio.sleep(1)
                 if not hasattr(self.bot.send_message, 'old'):
-                    self.prompt('WARNING', 'send_message')
+                    self.info_prompt('WARNING', 'send_message')
                     self.bot.send_message = self.send_lolz(self.bot.send_message)
-
-                if self.bot.user.bot and not hasattr(self.bot.edit_message, 'old'):
-                    self.prompt('WARNING', 'edit_message')
+                if not self.bot.user.bot and not hasattr(self.bot.edit_message, 'old'):
+                    self.info_prompt('WARNING', 'edit_message')
                     self.bot.edit_message = self.edit_lolz(self.bot.edit_message)
         except asyncio.CancelledError:
             pass
 
-    def prompt(self, option, func_name):
+    def info_prompt(self, option, func_name):
         if option == 'WARNING':
-            print('[WARNING:] -- Overwriting bot.{} with send_lolz. '
-                  'If bot.{} is not reloaded,'.format(func_name))
+            print('[WARNING:] -- Overwriting bot.{0} with send_lolz. '
+                  'If bot.{0} is not reloaded,'.format(func_name))
             print('[WARNING:] -- in the event of a crash of the lolz '
                   'cog, you may not be able revert to bot.{} '
                   'without a restart/reloading lolz'.format(func_name))
         elif option == 'TRY_CLEANUP':
-            print('[CLEANUP:] -- Trying to reload old bot.'.format(func_name))
+            print('[CLEANUP:] -- Trying to reload old bot.{}'.format(func_name))
         else:
             print('[CLEANUP:] -- Done. Reloading should have been successful '
                   'unless the lolz cog crashed without cleaning up')
@@ -293,12 +295,12 @@ class Lolz:
         self._monkeymanager.cancel()
         # revert any changes done with this method. we should check instead for only lolz override
         if hasattr(self.bot.send_message, 'old'):
-            self.prompt('TRY_CLEANUP', 'send_message')
+            self.info_prompt('TRY_CLEANUP', 'send_message')
             self.bot.send_message = self.bot.send_message.old
         if hasattr(self.bot.edit_message, 'old'):
-            self.prompt('TRY_CLEANUP', 'edit_message')
+            self.info_prompt('TRY_CLEANUP', 'edit_message')
             self.bot.edit_message = self.bot.edit_message.old
-        self.prompt('DONE', 'send_message')
+        self.info_prompt('DONE', 'send_message')
 
     async def on_message(self, message):
         chan_or_id = message.channel or message.author.id
@@ -312,9 +314,11 @@ class Lolz:
         if message.content.startswith(LOLZ_PREFIX):
             return
 
+        embed = message.embeds[0] if len(message.embeds) else None
+
         await self.bot.edit_message(message,
                                     new_content=message.content,
-                                    embed=message.embed)
+                                    embed=embed)
 
 
 def check_mod(ctx):
