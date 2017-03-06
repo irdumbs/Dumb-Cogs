@@ -152,7 +152,7 @@ class Lolz:
             dm_on = (is_private and
                      self.settings["DM"].get(chan_or_id.user.id, False))
 
-        return server_on and dm_on
+        return server_on or dm_on
 
     def in_place_translate_embed(self, embed):
         # not sure what provider is
