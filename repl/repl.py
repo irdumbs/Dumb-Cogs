@@ -390,7 +390,7 @@ class REPL:
         choices = [c.lower() for c in choices]
         answer = await self.bot.wait_for_message(timeout=timeout,
                                                  author=author)
-        answer = answer.content.lower()
+        answer = answer and answer.content.lower()
         return answer if answer in choices else None
 
     async def on_reaction_remove(self, reaction, user):
