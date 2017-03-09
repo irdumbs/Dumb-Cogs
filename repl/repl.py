@@ -9,14 +9,15 @@ import discord
 import inspect
 from contextlib import redirect_stdout
 from __main__ import send_cmd_help
-import io, sys, os
+import io
+import os
 import subprocess
 from collections import OrderedDict
 
 # TODO: rtfs
 #   * functionify
 #   * commandify
-#   * option to open in text editor
+#   * option to open file in text editor
 #   * Cogs
 #   * path/file.py
 #   * cog info / author
@@ -58,12 +59,12 @@ class REPL:
     async def print_results(self, ctx, results):
         msg = ctx.message
         nbs = '​'
-        discord_fmt = nbs+'```py\n{}\n```'
+        discord_fmt = nbs + '```py\n{}\n```'
         if len(discord_fmt.format(results)) > 2000:
             if self.settings["OUTPUT_REDIRECT"] == "pages":
-                task = self.interactive_results(ctx, results,
+                page = self.interactive_results(ctx, results,
                                                 single_msg=not self.settings["MULTI_MSG_PAGING"])
-                self.bot.loop.create_task(task)
+                self.bot.loop.create_task(page)
             elif self.settings["OUTPUT_REDIRECT"] == "pm":
                 await self.bot.send_message(msg.channel, 'Content too big. Check your PMs')
                 enough_paper = 20
@@ -71,7 +72,8 @@ class REPL:
                     await self.bot.send_message(msg.author, discord_fmt.format(page))
                     enough_paper -= 1
                     if not enough_paper:
-                        await self.bot.send_message(msg.author, "**Too many pages! Think of the trees!**")
+                        await self.bot.send_message(msg.author,
+                                                    "**Too many pages! Think of the trees!**")
                         return
             elif self.settings["OUTPUT_REDIRECT"] == "console":
                 await self.bot.send_message(msg.channel, 'Content too big. Check your console')
@@ -99,13 +101,13 @@ class REPL:
                                    ('🔽', 'next')))
 
         nbs = '​'
-        discord_fmt = nbs+'```py\n{}\n```'
+        discord_fmt = nbs + '```py\n{}\n```'
         prompt = ("  Output too long. Navigate pages with ({})"
                   .format('/'.join(choices.values())))
 
         pager = pagify(results, ['\n', ' '], page_length=1500)
         # results is not a generator, so no reason to keep this as one
-        pages = [discord_fmt.format(p) + 'pg. {}'.format(c+1)
+        pages = [discord_fmt.format(p) + 'pg. {}'.format(c + 1)
                  for c, p in enumerate(pager)]
         pages[0] += prompt
 
@@ -138,6 +140,7 @@ class REPL:
             await asyncio.gather(*(self.bot.remove_reaction(msg, r.emoji, botm)
                                    for r in msg.reactions if r.me),
                                  return_exceptions=True)
+
     async def display_page(self, page, channel, emojis, msgs, overwrite_prev):
         if msgs and overwrite_prev:
             msg = msgs.pop()
@@ -147,8 +150,7 @@ class REPL:
             send_msg = self.bot.send_message(channel, page)
             if msgs:
                 # refresh msg
-                prv_msg = await self.bot.get_message(channel, msgs[len(msgs)-1].id)
-                botm = channel.server.me
+                prv_msg = await self.bot.get_message(channel, msgs[len(msgs) - 1].id)
                 tasks = (send_msg, self.remove_reactions(prv_msg))
                 results = await asyncio.gather(*tasks, return_exceptions=True)
                 msg = results[0]
@@ -170,7 +172,8 @@ class REPL:
         emojis = tuple(choices.keys())
         words = tuple(choices.values())
 
-        def mcheck(msg): return msg.content.lower() in words
+        def mcheck(msg):
+            return msg.content.lower() in words
 
         tasks = (self.bot.wait_for_message(author=author, timeout=timeout,
                                            channel=msg.channel, check=mcheck),
@@ -181,6 +184,7 @@ class REPL:
 
         def msgconv(msg):
             res = msg.content.lower()
+
             async def try_del():
                 try:
                     await self.bot.delete_message(msg)
@@ -188,11 +192,12 @@ class REPL:
                     pass
             self.bot.loop.create_task(try_del())
             return res
-        def mojichoice(r): return choices[r.reaction.emoji]
+
+        def mojichoice(r):
+            return choices[r.reaction.emoji]
+
         converters = (msgconv, mojichoice, mojichoice)
         return await wait_for_first_response(tasks, converters)
-
-
 
     async def wait_for_reaction_remove(self, emoji=None, *, user=None,
                                        timeout=None, message=None, check=None):
@@ -217,7 +222,6 @@ class REPL:
             return done.pop().result() and res
         except:
             return None
-
 
     @commands.command(pass_context=True, hidden=True)
     @checks.is_owner()
@@ -312,8 +316,6 @@ class REPL:
           console  - print results to console
           file     - write results to a file, optionally opening in subl/atom
         """
-        server = ctx.message.server
-        channel = ctx.message.channel
         author = ctx.message.author
         if discord_console_file not in ['pm', 'console', 'file', 'pages']:
             await self.bot.say('Choices are discord/console/file')
@@ -321,12 +323,14 @@ class REPL:
         if discord_console_file == 'file':
             choices = ['subl', 'subl.exe', 'atom', 'atom.exe']
             msg = ("You chose to print to file. What would you like to open it with?\n"
-                   "Choose between:  {}".format(' | '.join(choices+['nothing'])))
+                   "Choose between:  {}".format(' | '.join(choices + ['nothing'])))
             answer = await self.user_choice(author, msg, choices)
             if answer not in choices:
-                await self.bot.say("ok, I won't open it after writing to {}".format(self.output_file))
+                await self.bot.say("ok, I won't open it after writing to "
+                                   "{}".format(self.output_file))
             else:
-                await self.bot.say("output will be opened with: {} {}".format(answer,self.output_file))
+                await self.bot.say("output will be opened with: {} "
+                                   "{}".format(answer, self.output_file))
             self.settings['OPEN_CMD'] = answer
         elif discord_console_file == 'pages':
             choices = ['yes', 'no', 'y', 'n']
@@ -341,7 +345,7 @@ class REPL:
             self.settings['MULTI_MSG_PAGING'] = answer
         self.settings["OUTPUT_REDIRECT"] = discord_console_file
         dataIO.save_json("data/repl/settings.json", self.settings)
-        await self.bot.say("repl overflow will now go to "+discord_console_file)
+        await self.bot.say("repl overflow will now go to " + discord_console_file)
 
     async def user_choice(self, author, msg, choices, timeout=20):
         await self.bot.say(msg)
@@ -351,7 +355,6 @@ class REPL:
         answer = answer.content.lower()
         return answer if answer in choices else None
 
-
     async def on_reaction_remove(self, reaction, user):
         """Handles watching for reactions for wait_for_reaction_remove"""
         event = self.reaction_remove_events.get(reaction.message.id, None)
@@ -359,7 +362,6 @@ class REPL:
             user == event.author and
             reaction.emoji in event.emojis):
             event.set(reaction)
-
 
 
 async def wait_for_first_response(tasks, converters):
