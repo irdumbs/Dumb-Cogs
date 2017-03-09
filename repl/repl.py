@@ -165,15 +165,22 @@ class REPL:
         return msg
 
     async def wait_for_interaction(self, msg, author, choices: OrderedDict,
-                                   timeout=120, delete_msg=True):
+                                   timeout=120, delete_msg=True,
+                                   match_first_char=True):
         """waits for a message or reaction add/remove
-        if the resonse is a msg, schedules msg deletion it if delete_msg"""
+        If the response is a msg,
+            schedules msg deletion it if delete_msg
+            also match 1 character msgs to the choice if match_first_char
+        """
 
         emojis = tuple(choices.keys())
         words = tuple(choices.values())
+        first_letters = {w[0]: w for w in words}
 
         def mcheck(msg):
-            return msg.content.lower() in words
+            lm = msg.content.lower()
+            return (lm in words or
+                    (match_first_char and lm in first_letters))
 
         tasks = (self.bot.wait_for_message(author=author, timeout=timeout,
                                            channel=msg.channel, check=mcheck),
@@ -184,6 +191,8 @@ class REPL:
 
         def msgconv(msg):
             res = msg.content.lower()
+            if res not in words:
+                res = first_letters[res]
 
             async def try_del():
                 try:
