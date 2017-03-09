@@ -67,7 +67,7 @@ class REPL:
                 self.bot.loop.create_task(page)
             elif self.settings["OUTPUT_REDIRECT"] == "pm":
                 await self.bot.send_message(msg.channel, 'Content too big. Check your PMs')
-                enough_paper = 20
+                enough_paper = self.settings["PM_PAGES"]
                 for page in pagify(results, ['\n', ' '], shorten_by=12):
                     await self.bot.send_message(msg.author, discord_fmt.format(page))
                     enough_paper -= 1
@@ -317,47 +317,75 @@ class REPL:
         if ctx.invoked_subcommand is None:
             await send_cmd_help(ctx)
 
-    @replset.command(pass_context=True, name="print", no_pm=True)
-    async def replset_print(self, ctx, discord_console_file):
-        """Sets where repl content goes when response is too large.
-        Choices are
-          pages    - navigable pager in the current
-          pm       - send up to 20 pages via pm
-          console  - print results to console
-          file     - write results to a file, optionally opening in subl/atom
-        """
+    @replset.group(pass_context=True, name="print", no_pm=True)
+    async def replset_print(self, ctx):
+        """Sets where repl content goes when response is too large."""
+        if ctx.invoked_subcommand is None or \
+                isinstance(ctx.invoked_subcommand, commands.Group):
+            await send_cmd_help(ctx)
+
+    @replset_print.command(pass_context=True, name="file")
+    async def replset_print_file(self, ctx, choice=None):
+        """write results to a file, optionally opening in subl/atom
+
+        Choices: nothing | subl | subl.exe | atom | atom.exe"""
         author = ctx.message.author
-        if discord_console_file not in ['pm', 'console', 'file', 'pages']:
-            await self.bot.say('Choices are discord/console/file')
+        choices = ['subl', 'subl.exe', 'atom', 'atom.exe']
+        if choice not in choices + [None, 'nothing']:
+            await send_cmd_help(ctx)
             return
-        if discord_console_file == 'file':
-            choices = ['subl', 'subl.exe', 'atom', 'atom.exe']
+        if choice is None:
             msg = ("You chose to print to file. What would you like to open it with?\n"
                    "Choose between:  {}".format(' | '.join(choices + ['nothing'])))
-            answer = await self.user_choice(author, msg, choices)
-            if answer not in choices:
-                await self.bot.say("ok, I won't open it after writing to "
-                                   "{}".format(self.output_file))
-            else:
-                await self.bot.say("output will be opened with: {} "
-                                   "{}".format(answer, self.output_file))
-            self.settings['OPEN_CMD'] = answer
-        elif discord_console_file == 'pages':
-            choices = ['yes', 'no', 'y', 'n']
-            msg = ("Add pages as new messages instead of navigating through the pages "
-                   "by editing one message? (yes/no)")
-            answer = await self.user_choice(author, msg, choices)
-            answer = answer is not None and answer[0] == 'y'
-            if answer:
-                await self.bot.say("ok, you will be given the option to page via adding new pages")
-            else:
-                await self.bot.say("ok, regular single-message paging will be used instead")
-            self.settings['MULTI_MSG_PAGING'] = answer
-        self.settings["OUTPUT_REDIRECT"] = discord_console_file
+            choice = await self.user_choice(author, msg, choices)
+        msg = "repl overflow will now go to file and "
+        if choice not in choices:
+            msg += "I won't open it after writing to {}".format(self.output_file)
+            choice = None
+        else:
+            msg += ("the output will be opened with: `{} "
+                    "{}`".format(choice, self.output_file))
+        self.settings['OPEN_CMD'] = choice
+        self.settings["OUTPUT_REDIRECT"] = "file"
         dataIO.save_json("data/repl/settings.json", self.settings)
-        await self.bot.say("repl overflow will now go to " + discord_console_file)
+        await self.bot.say(msg)
+
+    @replset_print.command(pass_context=True, name="pages")
+    async def replset_print_pages(self, ctx, add_pages: bool=False):
+        """navigable pager in the current channel..
+
+        set add_pages to true if you prefer the bot sending a new message for every new page"""
+        msg = "repl overflow will now go to pages in the channel and "
+        if add_pages:
+            msg += "you will be given the option to page via adding new pages"
+        else:
+            msg += "regular single-message paging will be used"
+        self.settings['MULTI_MSG_PAGING'] = add_pages
+        self.settings["OUTPUT_REDIRECT"] = "pages"
+        dataIO.save_json("data/repl/settings.json", self.settings)
+        await self.bot.say(msg)
+
+    @replset_print.command(pass_context=True, name="console")
+    async def replset_print_console(self, ctx):
+        """print results to console"""
+        self.settings["OUTPUT_REDIRECT"] = "console"
+        dataIO.save_json("data/repl/settings.json", self.settings)
+        await self.bot.say("repl overflow will now go to console")
+
+    @replset_print.command(pass_context=True, name="pm")
+    async def replset_print_pm(self, ctx, number_of_pages: int=20):
+        """send pages to pm. Defaults to 20"""
+        number_of_pages = max(number_of_pages, 1)
+        self.settings["OUTPUT_REDIRECT"] = "pm"
+        self.settings["PM_PAGES"] = number_of_pages
+        dataIO.save_json("data/repl/settings.json", self.settings)
+        await self.bot.say("repl overflow will now go to pm with a maximum of "
+                           "{} messages".format(number_of_pages))
 
     async def user_choice(self, author, msg, choices, timeout=20):
+        """prompts author with msg. if answer is not in choices, return None,
+        otherwise returns response lowered.
+        Times out 20 seconds by default"""
         await self.bot.say(msg)
         choices = [c.lower() for c in choices]
         answer = await self.bot.wait_for_message(timeout=timeout,
@@ -409,8 +437,8 @@ def check_folders():
 
 
 def check_files():
-    default = {"OUTPUT_REDIRECT": "discord", "OPEN_CMD": None,
-               "MULTI_MSG_PAGING": False}
+    default = {"OUTPUT_REDIRECT": "pages", "OPEN_CMD": None,
+               "MULTI_MSG_PAGING": False, "PM_PAGES": 20}
     settings_path = "data/repl/settings.json"
 
     if not os.path.isfile(settings_path):
