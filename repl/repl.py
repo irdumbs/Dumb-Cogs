@@ -105,10 +105,11 @@ class REPL:
         prompt = ("  Output too long. Navigate pages with ({})"
                   .format('/'.join(choices.values())))
 
-        pager = pagify(results, ['\n', ' '], page_length=1500)
+        pages = [p for p in pagify(results, ['\n', ' '], page_length=1500)]
         # results is not a generator, so no reason to keep this as one
-        pages = [discord_fmt.format(p) + 'pg. {}'.format(c + 1)
-                 for c, p in enumerate(pager)]
+        pages = [discord_fmt.format(p) + 'pg. {}/{}'
+                 .format(c + 1, len(pages))
+                 for c, p in enumerate(pages)]
         pages[0] += prompt
 
         choice = 'next'
