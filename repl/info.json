@@ -3,5 +3,6 @@
     "INSTALL_MSG" : "This is a REPL cog modified from Danny's bot: https://github.com/Rapptz/RoboDanny\n```prolog\nWarning```This cog allows the bot owner to execute arbitrary code.\nThis is obviously very dangerous. Bot owner is determined via utils.checks.is_owner.\nUse at your own risk.",
     "NAME" : "REPL + junk",
     "SHORT" : "Modified REPL cog from Danny's bot.",
-    "DESCRIPTION" : "Danny's REPL from his bot: https://github.com/Rapptz/RoboDanny\nwith some extra convenience features."
+    "DESCRIPTION" : "Danny's REPL from his bot: https://github.com/Rapptz/RoboDanny\nwith some extra convenience features.",
+    "TAGS" : ["tools", "rtfs", "dir", "programming", "coding"]
 }
