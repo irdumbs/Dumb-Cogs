@@ -211,8 +211,15 @@ class REPL:
             else:
                 msg = await send_msg
             try:
-                for e in emojis:  # we want these to be in order
-                    await self.bot.add_reaction(msg, e)
+                async def add_emojis(m, es):
+                    try:
+                        for e in es:  # we want these to be in order
+                            await self.bot.add_reaction(m, e)
+                    except discord.errors.NotFound:
+                        # was deleted before we could react
+                        pass
+                # but we don't want to wait
+                self.bot.loop.create_task(add_emojis(msg, emojis))
             except:
                 pass
         msgs.append(msg)
