@@ -26,6 +26,8 @@ from collections import OrderedDict
 #           * mention that it's not installed
 # TODO: set repl character `
 # TODO: set pager characters
+# TODO: replace repl's dir with dir(bot) - 'react' | dir(bot)['react']
+#   or make that ddir() instead.. or Dir()
 
 
 class Source:
@@ -103,7 +105,12 @@ class REPL:
             return '\n'.join(content.split('\n')[1:-1])
 
         # remove `foo`
-        return content.strip('` \n')
+        for p in self.settings["REPL_PREFIX"]:
+            if content.startswith(p):
+                if p == '`':
+                    return content.strip('` \n')
+                content = content[len(p):]
+                return content.strip(' \n')
 
     def get_syntax_error(self, e):
         return '```py\n{0.text}{1:>{0.offset}}\n{2}: {0}```'.format(e, '^', type(e).__name__)
@@ -158,7 +165,8 @@ class REPL:
         prompt = ("  Output too long. Navigate pages with ({})"
                   .format('/'.join(choices.values())))
 
-        pages = [p for p in pagify(results, ['\n', ' '], page_length=1500)]
+        pages = [p for p in pagify(results, ['\n', ' '],
+                                   page_length=self.settings["PAGES_LENGTH"])]
         # results is not a generator, so no reason to keep this as one
         pages = [discord_fmt.format(p) + 'pg. {}/{}'
                  .format(c + 1, len(pages))
@@ -301,7 +309,9 @@ class REPL:
 
         provide a second argument as a regex pattern to search for within the list
         provide a third exclude pattern to exclude those matches from the list
-        defaults to excluding items starting with an underscore "_" """
+        defaults to excluding items starting with an underscore "_"
+
+        Note: be careful with double quotes since discord.py parses those as strings"""
         # re_search = re.escape(re_search)
         # re_exclude = re.escape(re_exclude)
         bot = self.bot
@@ -377,8 +387,11 @@ class REPL:
         self.sessions.add(msg.channel.id)
         await self.bot.say('Enter code to execute or evaluate. `exit()` or `quit` to exit.')
         while True:
+            def check(m):
+                ps = tuple(self.settings["REPL_PREFIX"])
+                return m.content.startswith(ps)
             response = await self.bot.wait_for_message(author=msg.author, channel=msg.channel,
-                                                       check=lambda m: m.content.startswith('`'))
+                                                       check=check)
 
             cleaned = self.cleanup_code(response.content)
 
@@ -434,17 +447,48 @@ class REPL:
                 await self.bot.send_message(msg.channel, 'Unexpected error: `{}`'.format(e))
 
     @commands.group(pass_context=True)
+    @checks.is_owner()
     async def replset(self, ctx):
         """global repl settings"""
         if ctx.invoked_subcommand is None:
             await send_cmd_help(ctx)
 
-    @replset.group(pass_context=True, name="print", no_pm=True)
+    @replset.group(pass_context=True, name="print")
     async def replset_print(self, ctx):
         """Sets where repl content goes when response is too large."""
         if ctx.invoked_subcommand is None or \
                 isinstance(ctx.invoked_subcommand, commands.Group):
             await send_cmd_help(ctx)
+
+    @replset.command(pass_context=True, name="pagelength")
+    async def replset_pagelength(self, ctx, length: int=1500):
+        """Sets the page length when using the [p]replset print pages option
+
+        length must be between 300 and 1700.
+        length defaults to 1500"""
+        if not (300 <= length <= 1700):
+            return await send_cmd_help(ctx)
+        old_length = self.settings["PAGES_LENGTH"]
+        self.settings["PAGES_LENGTH"] = length
+        dataIO.save_json("data/repl/settings.json", self.settings)
+        await self.bot.say("each page will now break at {} characters "
+                           "(was {})".format(length, old_length))
+
+    @replset.command(pass_context=True, name="prefix")
+    async def replset_prefix(self, ctx, *prefixes):
+        """Sets the prefixes repl looks for.
+
+        Defaults to `
+        Note: choosing prefixes that don't include ` will mean that
+        repl no longer listens for code blocks"""
+        if not prefixes:
+            prefixes = ('`',)
+        prefixes = sorted(prefixes, reverse=True)
+        old_prefixes = self.settings["REPL_PREFIX"]
+        self.settings["REPL_PREFIX"] = prefixes
+        dataIO.save_json("data/repl/settings.json", self.settings)
+        await self.bot.say("repl will now respond to {}. Before the prefixes "
+                           "were {}".format(prefixes, old_prefixes))
 
     @replset_print.command(pass_context=True, name="file")
     async def replset_print_file(self, ctx, choice=None):
@@ -560,7 +604,8 @@ def check_folders():
 
 def check_files():
     default = {"OUTPUT_REDIRECT": "pages", "OPEN_CMD": None,
-               "MULTI_MSG_PAGING": False, "PM_PAGES": 20}
+               "MULTI_MSG_PAGING": False, "PM_PAGES": 20,
+               "PAGES_LENGTH": 1500, "REPL_PREFIX": ['`']}
     settings_path = "data/repl/settings.json"
 
     if not os.path.isfile(settings_path):
