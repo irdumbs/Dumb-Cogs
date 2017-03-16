@@ -30,14 +30,6 @@ from collections import OrderedDict
 #   or make that ddir() instead.. or Dir()
 
 
-class Source:
-    def __init__(self, cmd):
-        self.filename = inspect.getsourcefile(cmd)
-        source = inspect.getsourcelines(cmd)
-        self.line_number = source[1]
-        self.source = ''.join(source[0])
-
-
 class ReactionRemoveEvent(asyncio.Event):
     def __init__(self, emojis, author):
         super().__init__()
@@ -48,6 +40,14 @@ class ReactionRemoveEvent(asyncio.Event):
     def set(self, reaction):
         self.reaction = reaction
         return super().set()
+
+
+class Source:
+    def __init__(self, cmd):
+        self.filename = inspect.getsourcefile(cmd)
+        source = inspect.getsourcelines(cmd)
+        self.line_number = source[1]
+        self.source = ''.join(source[0])
 
 
 class REPL:
