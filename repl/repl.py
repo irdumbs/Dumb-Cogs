@@ -16,16 +16,17 @@ import subprocess
 from collections import OrderedDict
 
 # TODO: rtfs
-#   * functionify
-#   * commandify
+# X  * functionify
+# X  * commandify
 #   * option to open file in text editor
 #   * Cogs
 #   * path/file.py
 #   * cog info / author
 #       * look in downloads if not found
 #           * mention that it's not installed
-# TODO: set repl character `
-# TODO: set pager characters
+# X TODO: set repl character `
+# X TODO: set pager characters
+# TODO: set page length per repl prefix (mobile)
 # TODO: replace repl's dir with dir(bot) - 'react' | dir(bot)['react']
 #   or make that ddir() instead.. or Dir()
 
@@ -119,12 +120,14 @@ class REPL:
         msg = ctx.message
         nbs = '​'
         discord_fmt = nbs + '```py\n{}\n```'
-        if len(discord_fmt.format(results)) > 2000:
-            if self.settings["OUTPUT_REDIRECT"] == "pages":
-                page = self.interactive_results(ctx, results,
-                                                single_msg=not self.settings["MULTI_MSG_PAGING"])
-                self.bot.loop.create_task(page)
-            elif self.settings["OUTPUT_REDIRECT"] == "pm":
+        is_interactive = self.settings["OUTPUT_REDIRECT"] == "pages"
+        res_len = len(discord_fmt.format(results))
+        if is_interactive and res_len > self.settings["PAGES_LENGTH"]:
+            page = self.interactive_results(ctx, results,
+                                            single_msg=not self.settings["MULTI_MSG_PAGING"])
+            self.bot.loop.create_task(page)
+        elif res_len > 2000:
+            if self.settings["OUTPUT_REDIRECT"] == "pm":
                 await self.bot.send_message(msg.channel, 'Content too big. Check your PMs')
                 enough_paper = self.settings["PM_PAGES"]
                 for page in pagify(results, ['\n', ' '], shorten_by=12):
