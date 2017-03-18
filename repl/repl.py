@@ -14,6 +14,8 @@ import os
 import re
 import subprocess
 from collections import OrderedDict
+from collections import MutableSequence
+
 
 # TODO: rtfs
 # X  * functionify
@@ -24,11 +26,23 @@ from collections import OrderedDict
 #   * cog info / author
 #       * look in downloads if not found
 #           * mention that it's not installed
+#   * shorter error message
 # X TODO: set repl character `
 # X TODO: set pager characters
 # TODO: set page length per repl prefix (mobile)
-# TODO: replace repl's dir with dir(bot) - 'react' | dir(bot)['react']
-#   or make that ddir() instead.. or Dir()
+# X TODO: replace repl's dir with dir(bot) - 'react' | dir(bot)['react']
+# X   or make that ddir() instead.. or Dir()
+#
+# TODO:
+"""
+def __getattr__(self, attr):
+    try:
+        return self.__dict__[attr]
+    except:
+        if attr in self._exclusions:
+            return NotImplemented
+        return getattr(self.__superclass, attr)
+"""
 
 
 class ReactionRemoveEvent(asyncio.Event):
@@ -41,6 +55,182 @@ class ReactionRemoveEvent(asyncio.Event):
     def set(self, reaction):
         self.reaction = reaction
         return super().set()
+
+
+def irdir(*args, re_exclude=None, re_search=None):
+    """Dir([object[,re_exclude[,re_search]]]) --> Dir[list of attributes]
+    slightly more useful dir() with search/exclusion
+
+    returns a Dir object.
+
+    Like built-in function dir,
+    If called without an argument, return the names in the current scope.
+    Else, return an alphabetized list of names comprising (some of) the attributes
+    of the given object, and of attributes reachable from it.
+
+    If re_exclude or re_search arguments are given,
+    they are used as exclusion and search regexes on the object's list of attributes/
+    If left blank, private and protected attributes are excluded by default
+
+    Dir() objects can have their search/exclusion regexes added to via the operator pairs:
+    Search, Exclusion
+    -----------------
+         +, -
+         @, //
+        [], del (also provides indexed get/deletion)
+    search, exclude (methods)
+
+    * done as a function for more legible help()
+    ** At the moment there are many unimplemented list-like methods. Most of them don't work.
+       I will remove them later. If you need it to act like a list instead of a Dir, just list(it)
+    """
+    return Dir(*args, re_exclude=re_exclude, re_search=re_search)
+
+
+class Dir(MutableSequence):
+    """Dir([object[,re_exclude[,re_search]]]) --> Dir[list of attributes]
+    slightly more useful dir() with search/exclusion
+
+    Like built-in function dir,
+    If called without an argument, return the names in the current scope.
+    Else, return an alphabetized list of names comprising (some of) the attributes
+    of the given object, and of attributes reachable from it.
+
+    If re_exclude or re_search arguments can be strings or lists of patterns.
+    If given, they are used as exclusion and search regexes on the object's list of attributes.
+    If left blank, private and protected attributes are excluded by default.
+
+    Dir() objects can have their search/exclusion regexes added to via the operator pairs:
+    Search, Exclusion
+    -----------------
+         +, -
+         @, //
+        [], del (also provides indexed get/deletion)
+    search, exclude (methods)
+
+    ** At the moment there are many unimplemented list-like methods. Most of them don't work.
+       I will remove them later. If you need it to act like a list instead of a Dir, just list(it)
+    """
+
+    def __init__(self, *args, re_exclude=None, re_search=None):
+        # thing, re_search=[], re_exclude: str="^_"
+        args = list(args)
+        nargs = sum([True] * len(args) +
+                    [re_exclude is not None] +
+                    [re_search is not None])
+        if nargs > 3:
+            raise TypeError("dir expected at most 3 arguments, "
+                            "got {}".format(nargs))
+        kwargs = {}
+        keys = ["object", "re_exclude", "re_search"]
+        for k in keys:
+            if args:
+                kwargs[k] = args.pop(0)
+        if re_exclude is not None:
+            kwargs["re_exclude"] = re_exclude
+        if re_search is not None:
+            kwargs["re_search"] = re_search
+
+        re_exclude = kwargs.get("re_exclude", ['^_'])
+        re_search = kwargs.get("re_search", [])
+
+        try:
+            self._object = kwargs["object"]
+            self.list = dir(self._object)
+        except:
+            # dir() and locals() show this namespace.
+            # globals() shows this's global namespace
+            # don't know how to make this act like it's in the repl
+            raise TypeError('please use dir() to see locals')
+            self.list = ["please use dir() to see locals"]
+        if isinstance(re_search, str):
+            re_search = [re_search]
+        if isinstance(re_exclude, str):
+            re_exclude = [re_exclude]
+        self._re_search = list(re_search)  # in case a tuple is given
+        self._re_exclude = list(re_exclude)
+        self._search()
+        self._exclude()
+
+    def __str__(self):
+        return "Dir{}".format(str(self.list))
+
+    def __repr__(self):
+        try:
+            return ("<Dir object({}, re_exclude={}, re_search={})>"
+                    .format(repr(self._object),
+                            repr(self._re_exclude),
+                            repr(self._re_search)))
+        except:
+            return ("<Dir object(re_exclude={}, re_search={})>"
+                    .format(repr(self._re_exclude),
+                            repr(self._re_search)))
+
+    def _search(self, add: str=None):
+        if add:
+            self._re_search.append(add)
+        for s in self._re_search:
+            self.list = [i for i in self.list if re.search(s, i)]
+
+    def _exclude(self, add: str=None):
+        if add:
+            self._re_exclude.append(add)
+        re_exclude = '|'.join(self._re_exclude)
+        self.list = [i for i in self.list if not re.search(re_exclude, i)]
+
+    def __len__(self): return len(self.list)
+
+    def __getitem__(self, i):
+        """returns the i'th item.
+        If i is a str, returns a new Dir instance with a more constrained search"""
+        return self.search(i) if isinstance(i, str) else self.list[i]
+
+    def __matmul__(self, other: str):
+        """returns a new Dir instance with a more constrained search"""
+        return self.search(other) if isinstance(other, str) else NotImplemented
+
+    def __add__(self, other: str):
+        """returns a new Dir instance with a more constrained search"""
+        return self.search(other) if isinstance(other, str) else NotImplemented
+
+    def __delitem__(self, i):
+        """removes the i'th item.
+        If i is a str, adds i to the list of excluded regex"""
+        if isinstance(i, str):
+            self._exclude(i)
+        else:
+            del self.list[i]
+
+    def __floordiv__(self, other: str):
+        """returns a new Dir instance with an added exclusion"""
+        return self.exclude(other) if isinstance(other, str) else NotImplemented
+
+    def __sub__(self, other: str):
+        """returns a new Dir instance with an added exclusion"""
+        return self.exclude(other) if isinstance(other, str) else NotImplemented
+
+    def __setitem__(self, i, v):
+        return NotImplemented
+
+    def insert(self, i, x):
+        return NotImplemented
+
+    def search(self, re_search: str):
+        """returns a new Dir instance with a more constrained search"""
+        if hasattr(self, '_object'):
+            return Dir(self._object, re_exclude=self._re_exclude,
+                       re_search=self._re_search + [re_search])
+        return Dir(re_exclude=self._re_exclude,
+                   re_search=self._re_search + [re_search])
+
+    def exclude(self, re_exclude: str):
+        """returns a new Dir instance with an added exclusion"""
+        if hasattr(self, '_object'):
+            return Dir(self._object, re_exclude=self._re_exclude + [re_exclude],
+                       re_search=self._re_search)
+        return Dir(re_exclude=self._re_exclude + [re_exclude],
+                   re_search=self._re_search)
+
 
 
 class Source:
@@ -380,6 +570,7 @@ class REPL:
             'channel': msg.channel,
             'author': msg.author,
             'rtfs': self.repl_format_source,
+            'Dir': irdir,
             '_': None,
         }
 
