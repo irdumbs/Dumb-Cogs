@@ -520,10 +520,13 @@ class REPL:
             'author': msg.author
         }
 
-        res = repr([a for a in dir(eval(thing, variables))
-                    if not re.search(re_exclude, a)
-                    and re.search(re_search, a)])
-        await self.print_results(ctx, res)
+        def call(thing, variables):
+            return repr([a for a in dir(eval(thing, variables))
+                         if not re.search(re_exclude, a)
+                         and re.search(re_search, a)])
+
+        closure = _close(call, thing, variables)
+        await self.print_results(ctx, _call_catch_fmt(closure, 0))
 
     @commands.command(pass_context=True, aliases=['rtfh'])
     @checks.is_owner()
@@ -540,17 +543,11 @@ class REPL:
             'author': msg.author
         }
 
-        stdout = io.StringIO()
-        try:
-            with redirect_stdout(stdout):
-                result = help(eval(thing, variables))
-        except Exception as e:
-                value = stdout.getvalue()
-                fmt = '{}{}'.format(value, traceback.format_exc())
-        else:
-            value = stdout.getvalue()
-            fmt = (value or '') + ('' if result is None else result)
-        await self.print_results(ctx, fmt)
+        def call(thing, variables):
+            return help(eval(thing, variables))
+
+        closure = _close(call, thing, variables)
+        await self.print_results(ctx, _call_catch_fmt(closure, 0))
 
     @commands.command(pass_context=True)
     @checks.is_owner()
@@ -572,7 +569,11 @@ class REPL:
             'author': msg.author
         }
 
-        await self.print_results(ctx, self.repl_format_source(eval(thing, variables)))
+        def call(thing, variables):
+            return self.repl_format_source(eval(thing, variables))
+
+        closure = _close(call, thing, variables)
+        await self.print_results(ctx, _call_catch_fmt(closure, 0))
 
     @commands.command(pass_context=True, hidden=True)
     @checks.is_owner()
@@ -777,6 +778,26 @@ class REPL:
             user == event.author and
             reaction.emoji in event.emojis):
             event.set(reaction)
+
+
+def _call_catch_fmt(call, limit=None):
+    stdout = io.StringIO()
+    try:
+        with redirect_stdout(stdout):
+            result = call()
+    except Exception as e:
+            value = stdout.getvalue()
+            fmt = '{}{}'.format(value, traceback.format_exc(limit))
+    else:
+        value = stdout.getvalue()
+        fmt = (value or '') + ('' if result is None else result)
+    return fmt
+
+
+def _close(f, *args, **kwargs):
+    def call():
+        return f(*args, **kwargs)
+    return call
 
 
 async def wait_for_first_response(tasks, converters):
