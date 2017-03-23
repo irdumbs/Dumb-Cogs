@@ -32,6 +32,9 @@ from collections import MutableSequence
 # TODO: set page length per repl prefix (mobile)
 # X TODO: replace repl's dir with dir(bot) - 'react' | dir(bot)['react']
 # X   or make that ddir() instead.. or Dir()
+# TODO: constrain command evals
+# TODO: format command errors
+# TODO: merge with REPL
 #
 # TODO:
 """
@@ -230,7 +233,6 @@ class Dir(MutableSequence):
                        re_search=self._re_search)
         return Dir(re_exclude=self._re_exclude + [re_exclude],
                    re_search=self._re_search)
-
 
 
 class Source:
@@ -507,13 +509,18 @@ class REPL:
         Note: be careful with double quotes since discord.py parses those as strings"""
         # re_search = re.escape(re_search)
         # re_exclude = re.escape(re_exclude)
-        bot = self.bot
-        message = ctx.message
-        author = message.author
-        channel = message.channel
-        server = message.server
+        msg = ctx.message
 
-        res = repr([a for a in dir(eval(thing))
+        variables = {
+            'ctx': ctx,
+            'bot': self.bot,
+            'message': msg,
+            'server': msg.server,
+            'channel': msg.channel,
+            'author': msg.author
+        }
+
+        res = repr([a for a in dir(eval(thing, variables))
                     if not re.search(re_exclude, a)
                     and re.search(re_search, a)])
         await self.print_results(ctx, res)
@@ -522,16 +529,21 @@ class REPL:
     @checks.is_owner()
     async def pyhelp(self, ctx, *, thing: str):
         """displays the help documentation for a python thing"""
-        bot = self.bot
-        message = ctx.message
-        author = message.author
-        channel = message.channel
-        server = message.server
+        msg = ctx.message
+
+        variables = {
+            'ctx': ctx,
+            'bot': self.bot,
+            'message': msg,
+            'server': msg.server,
+            'channel': msg.channel,
+            'author': msg.author
+        }
 
         stdout = io.StringIO()
         try:
             with redirect_stdout(stdout):
-                result = help(eval(thing))
+                result = help(eval(thing, variables))
         except Exception as e:
                 value = stdout.getvalue()
                 fmt = '{}{}'.format(value, traceback.format_exc())
@@ -549,13 +561,18 @@ class REPL:
         or if surrounded by single or double quotes,
             a space separated discord.ext.commands call,
             or a period deliminated file/module path as used when importing"""
-        bot = self.bot
-        message = ctx.message
-        author = message.author
-        channel = message.channel
-        server = message.server
+        msg = ctx.message
 
-        await self.print_results(ctx, self.repl_format_source(eval(thing)))
+        variables = {
+            'ctx': ctx,
+            'bot': self.bot,
+            'message': msg,
+            'server': msg.server,
+            'channel': msg.channel,
+            'author': msg.author
+        }
+
+        await self.print_results(ctx, self.repl_format_source(eval(thing, variables)))
 
     @commands.command(pass_context=True, hidden=True)
     @checks.is_owner()
