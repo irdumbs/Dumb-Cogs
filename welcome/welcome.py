@@ -80,7 +80,7 @@ class Welcome:
         author = ctx.message.author
         msg = 'Choose a welcome message to delete:\n\n'
         for c, m in enumerate(self.settings[server.id]["GREETING"]):
-            msg += "  {}. {}".format(c, m)
+            msg += "  {}. {}\n".format(c, m)
         for page in pagify(msg, ['\n', ' '], shorten_by=20):
             await self.bot.say("```\n{}\n```".format(page))
         answer = await self.bot.wait_for_message(timeout=120, author=author)
