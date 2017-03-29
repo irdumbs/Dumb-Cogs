@@ -32,9 +32,20 @@ from collections import MutableSequence
 # TODO: set page length per repl prefix (mobile)
 # X TODO: replace repl's dir with dir(bot) - 'react' | dir(bot)['react']
 # X   or make that ddir() instead.. or Dir()
-# TODO: constrain command evals
-# TODO: format command errors
+# X TODO: constrain command evals
+# X TODO: format command errors
 # TODO: merge with REPL
+# TODO: still listen for code blocks if ` is included in the prefix list
+# TODO: pager length on \n?
+# TODO: REPL Sessions 😱
+#   * load/save (reeval) all history starting from [p]repl
+#   * save input/output history viewable later (log file + pager reader?)
+# TODO: [p]dir+, [p]dir- ([p]dir +/ [p]dir -), [p]pyhelp ^ (or default) (or both so can ^.attr)
+#   * save previous [p]dirs and add +/- to it (search/exclude)
+#   * [p]pyhelp with "^"" and/or blank gets help for dir'd thing
+#       (or singled attr or ^.search if search returns single attr)
+#   * [p]dir ^.search dirs the next layer down if search returns a single attr
+#
 #
 # TODO:
 """
