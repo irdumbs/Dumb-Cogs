@@ -157,12 +157,12 @@ class Economytrickle:
 
     async def trickle(self, message):
         """trickle pb to active users"""
-        if message.server == None or not isinstance(message.author,
+        if message.server is None or not isinstance(message.author,
                                                     discord.Member):
             return
         #if different person speaking
         sid = message.server.id
-        if self.settings.get(sid,None) == None:
+        if self.settings.get(sid,None) is None:
             self.settings[sid] = self.defaultSettings
             fileIO("data/economytrickle/settings.json", "save", self.settings)
         if (self.settings[sid]["TRICKLE_BOT"] or message.author.id != self.bot.user.id) and self.currentUser.get(message.server.id,None) != message.author.id:
@@ -175,7 +175,7 @@ class Economytrickle:
             if sid in self.activeUsers.keys():
                 if self.currentUser[sid] not in self.activeUsers.get(sid,None).keys():
                     #might be redundant
-                    # if self.tricklePot.get(sid,None) == None:
+                    # if self.tricklePot.get(sid,None) is None:
                     #   self.tricklePot[sid] = 0
                     #don't wanna add to the pot for bot
                     if message.author.id != self.bot.user.id:
@@ -206,7 +206,7 @@ class Economytrickle:
 
                 econ = None  # <-- lol wtf who write this ( ͡° ͜ʖ ͡°)
                 econ = self.bot.get_cog('Economy')
-                if econ == None:
+                if econ is None:
                     print("--- Error: Was not able to load Economy cog into Economytrickle. ---")
                 #all active users
                 #print(message.author.id + " " + message.author.name)
