@@ -157,7 +157,8 @@ class Economytrickle:
 
     async def trickle(self, message):
         """trickle pb to active users"""
-        if message.server == None:
+        if message.server == None or not isinstance(message.author,
+                                                    discord.Member):
             return
         #if different person speaking
         sid = message.server.id
