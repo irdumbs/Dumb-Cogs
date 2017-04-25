@@ -27,7 +27,7 @@ class Economytrickle:
         self.previousDrip = {}
         self.defaultSettings = {"TRICKLE_BOT" : False, "NEW_ACTIVE_BONUS" : 1, "ACTIVE_BONUS_DEFLATE" : 1, "PAYOUT_INTERVAL" : 2, "CHANCE_TO_PAYOUT" : 50, "PAYOUT_PER_ACTIVE" : 1, "ACTIVE_TIMEOUT" : 10}
 
-    @commands.group(pass_context=True)
+    @commands.group(pass_context=True, no_pm=True)
     @checks.mod_or_permissions(manage_server=True)
     async def trickleset(self, ctx):
         """Changes economy trickle settings
