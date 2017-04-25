@@ -134,9 +134,9 @@ class Economytrickle:
         fileIO("data/economytrickle/settings.json", "save", self.settings)
 
     #if Economy.py updates, this may break
-    @commands.command(pass_context=True)
+    @commands.command(pass_context=True, no_pm=True)
     @checks.is_owner()
-    async def registerbot(self, ctx, agree : str):
+    async def registerbot(self, ctx, agree :str):
         """registers the bot into Economy.py bank.
 
         Although nothing bad will probably happen, this was not how Economy was intended.
