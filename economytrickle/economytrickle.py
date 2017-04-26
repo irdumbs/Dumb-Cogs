@@ -136,7 +136,7 @@ class Economytrickle:
     #if Economy.py updates, this may break
     @commands.command(pass_context=True, no_pm=True)
     @checks.is_owner()
-    async def registerbot(self, ctx, agree :str):
+    async def registerbot(self, ctx, agree: str):
         """registers the bot into Economy.py bank.
 
         Although nothing bad will probably happen, this was not how Economy was intended.
@@ -146,10 +146,17 @@ class Economytrickle:
         """
         if agree.lower() == "i have read and understand. just give my bot money!":
             econ = self.bot.get_cog('Economy')
+            if not econ:
+                await self.bot.say('Unable to load Economy cog. '
+                                   'Please make sure it is loaded with '
+                                   '`{}load economy`'.format(ctx.prefix))
+                return
             botuser = ctx.message.server.me
             if not econ.bank.account_exists(botuser):
                 econ.bank.create_account(botuser)
-                await self.bot.say("Account opened for {}. Current balance: {}".format(botuser.mention, econ.bank.get_balance(botuser)))
+                await self.bot.say("Account opened for {}. Current balance: "
+                                   "{}".format(botuser.mention,
+                                               econ.bank.get_balance(botuser)))
             else:
                 await self.bot.say("{} already has an account at the Twentysix bank.".format(botuser.mention))
         else:
