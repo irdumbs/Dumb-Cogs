@@ -221,7 +221,7 @@ class Economytrickle:
                 for u in self.activeUsers[sid].keys():
                     us = message.server.get_member(u)
                     #print(str(now) + " | " + str(self.activeUsers[u]) + " " + str(expireTime) + str(self.activeUsers[u] > expireTime))
-                    if self.activeUsers[sid][u] < expireTime:
+                    if self.activeUsers[sid][u] < expireTime or us is None:
                         templist.append(u)
                     elif econ.bank.account_exists(us):
                         econ.bank.deposit_credits(us, trickleAmt)
