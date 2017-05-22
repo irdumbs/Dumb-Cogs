@@ -5,7 +5,7 @@ import datetime
 import time
 import os
 import asyncio
-from .utils.dataIO import fileIO
+from .utils.dataIO import fileIO, dataIO
 from .utils import checks
 from __main__ import send_cmd_help
 
@@ -25,7 +25,10 @@ class Economytrickle:
         self.currentUser = {}
         self.tricklePot = {}
         self.previousDrip = {}
-        self.defaultSettings = {"TRICKLE_BOT" : False, "NEW_ACTIVE_BONUS" : 1, "ACTIVE_BONUS_DEFLATE" : 1, "PAYOUT_INTERVAL" : 2, "CHANCE_TO_PAYOUT" : 50, "PAYOUT_PER_ACTIVE" : 1, "ACTIVE_TIMEOUT" : 10}
+        self.defaultSettings = {"TRICKLE_BOT" : False, "NEW_ACTIVE_BONUS" : 1, 
+                                "ACTIVE_BONUS_DEFLATE" : 1, "PAYOUT_INTERVAL" : 2, 
+                                "CHANCE_TO_PAYOUT" : 50, "PAYOUT_PER_ACTIVE" : 1, 
+                                "ACTIVE_TIMEOUT" : 10, "TOGGLE": False, "CHANNELS" = []}
 
     @commands.group(pass_context=True, no_pm=True)
     @checks.mod_or_permissions(manage_server=True)
@@ -35,14 +38,121 @@ class Economytrickle:
             (# active users - 1) x multiplier + bonus pot
         Every active user gets the trickle amount. It is not distributed between active users.
         """
+        server = ctx.message.server
+        settings = self.settings.setdefault(server.id, self.defaultSettings)
         if ctx.invoked_subcommand is None:
             await send_cmd_help(ctx)
-            sid = ctx.message.server.id
             msg = "```"
-            for k, v in self.settings[sid].items():
+            for k, v in settings.items():
+                if k == 'CHANNELS':
+                    v = ['#' + c.name if c else 'deleted-channel' 
+                         for c in (server.get_channel(cid) for cid in v)]
+                    v = ', '.join(v)
+                v = {True: 'On', False: 'Off'}.get(v, v)
                 msg += str(k) + ": " + str(v) + "\n"
             msg += "```"
             await self.bot.say(msg)
+
+    @trickleset.command(name="toggle", pass_context=True)
+    async def toggle(self, ctx, context: str=None):
+        """Toggles trickling in a server. 
+        Leaving blank defaults to toggling between channel/server and off
+
+        Options: 
+            channels
+            server
+            off
+        """
+        server = ctx.message.server
+        channel = ctx.message.channel
+        author = ctx.message.author
+
+        settings = self.settings[server.id]
+        context = context.lower()
+
+        toggled = not settings.get('TOGGLE', False)
+        choices = {'channels': True, 'server': 'SERVER', 
+                   'off': False, None: toggled}
+        if context not in choices:
+            return await send_cmd_help(ctx)
+
+        settings['TOGGLE'] = choices[context]
+
+        if settings['TOGGLE']:
+            res = ('Trickling for all channels that '
+                   'the bot can see in this server')
+            settings['TOGGLE'] = 'SERVER'
+            if settings.setdefault('CHANNELS', []):
+                fmt = ("There channels in the `{}trickleset channel` list. "
+                       "Turn on trickling only for those channels "
+                       "or for the whole server? (channels/server)")
+                await self.bot.say(fmt.format(ctx.prefix))
+                msg = await self.bot.wait_for_message(timeout=30, 
+                                                      author=author,
+                                                      channel=channel)
+                if msg is None:
+                    res = ('no response. defaulting to trickling in '
+                           'channels listed in `{}trickleset channel`')
+                    setting['TOGGLE'] = True
+                elif 'serv' not in msg.content.lower():
+                    res = ('Trickling only for channels listed '
+                           'in `{}trickleset channel`')
+                    setting['TOGGLE'] = True
+        else:
+             res = 'Trickling turned off in this server'
+        await self.bot.say(res.format(ctx.prefix))
+        dataIO.save_json("data/economytrickle/settings.json", self.settings)
+
+    @trickleset.command(name="channel", pass_context=True)
+    async def channel(self, ctx, *one_or_more_channels: discord.Channel):
+        """Toggles trickling in one or more channels
+        Leaving blank will list the current trickle channels
+        """
+        server = ctx.message.server
+        channel = ctx.message.channel
+        author = ctx.message.author
+        settings = self.settings[server.id]
+        fmt = ''
+        if settings.get('TOGGLE', False) is not True:
+            fmt = ('Note: You will not see these changes take effect until you set '
+                       '`{}trickleset server` to **channels**.\n'.format(ctx.prefix))
+
+        csets = settings.setdefault('CHANNELS', [])
+        current = sorted(filter(None, (server.get_channel(c) for c in csets)),
+                         key=lambda c: c.position)
+        channels = set(one_or_more_channels)
+
+        if not channels:  # no channels specified
+            if not current:
+                fmt += 'There are no channels set to specifically trickle in.'
+            else:
+                fmt += ('Channels to trickle in:\n' +
+                        '\n'.join('\t' + c.mention for c in current))
+            return await self.bot.say(fmt)
+
+        current = set(current)
+        overlap_choice = ''
+        if not (channels.isdisjoint(current) or  # new channels 
+                current.issuperset(channels)):   # remove channels
+            await self.bot.say('Some channels listed are already in the trickle'
+                               ' list while some are not. Trickle to all the '
+                               'channels you listed, stop trickling to them, '
+                               'or cancel? (all/stop/cancel)')
+            msg = await self.bot.wait_for_message(timeout=30, 
+                                                  author=author,
+                                                  channel=channel)
+            overlap_choice = msg.content.lower() if msg else None
+            if overlap_choice not in ('all', 'stop'):
+                return await self.bot.say('Cancelling. Trickle Channels are unchanged.')
+        
+        if overlap_choice == 'all' or channels.isdisjoint(current):
+            current.update(channels) 
+        else:
+            current -= channels
+
+        settings['CHANNELS'] = [c.id for c in current]
+        await self.bot.say('Trickle channels updated.\n'+fmt)
+        dataIO.save_json("data/economytrickle/settings.json", self.settings)
 
     @trickleset.command(name="bot", pass_context=True)
     async def tricklebot(self, ctx):
@@ -167,11 +277,18 @@ class Economytrickle:
         if message.server is None or not isinstance(message.author,
                                                     discord.Member):
             return
+
         #if different person speaking
         sid = message.server.id
-        if self.settings.get(sid,None) is None:
+        if sid not in self.settings:
             self.settings[sid] = self.defaultSettings
             fileIO("data/economytrickle/settings.json", "save", self.settings)
+        
+        toggle = self.settings[sid]['TOGGLE']
+        if not toggle:
+            return
+        if toggle is True and message.channel.id not in self.settings[sid]['CHANNELS']:
+            return
         if (self.settings[sid]["TRICKLE_BOT"] or message.author.id != self.bot.user.id) and self.currentUser.get(message.server.id,None) != message.author.id:
             #print("----Trickle----")
             # add user or update timestamp and make him current user
