@@ -120,7 +120,7 @@ class Economytrickle:
         fmt = ''
         if settings['TOGGLE'] is not True:
             fmt = ('Note: You will not see these changes take effect until you set '
-                       '`{}trickleset server` to **channels**.\n'.format(ctx.prefix))
+                       '`{}trickleset toggle` to **channels**.\n'.format(ctx.prefix))
 
         csets = settings['CHANNELS']
         current = sorted(filter(None, (server.get_channel(c) for c in csets)),
