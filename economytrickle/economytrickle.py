@@ -101,9 +101,9 @@ class Economytrickle:
                                                       channel=channel)
                 if msg is None:
                     msgs[True] = 'No Response. ' + msgs[True]
-                    setting['TOGGLE'] = True
+                    settings['TOGGLE'] = True
                 elif 'serv' not in msg.content.lower():
-                    setting['TOGGLE'] = True
+                    settings['TOGGLE'] = True
 
         await self.bot.say(msgs[settings['TOGGLE']].format(ctx.prefix))
         dataIO.save_json("data/economytrickle/settings.json", self.settings)
