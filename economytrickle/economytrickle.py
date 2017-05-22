@@ -8,6 +8,13 @@ import asyncio
 from .utils.dataIO import fileIO, dataIO
 from .utils import checks
 from __main__ import send_cmd_help
+from copy import deepcopy
+
+
+DEFAULT_SETTINGS = {"TRICKLE_BOT" : False, "NEW_ACTIVE_BONUS" : 1, 
+                    "ACTIVE_BONUS_DEFLATE" : 1, "PAYOUT_INTERVAL" : 2, 
+                    "CHANCE_TO_PAYOUT" : 50, "PAYOUT_PER_ACTIVE" : 1, 
+                    "ACTIVE_TIMEOUT" : 10, "TOGGLE": False, "CHANNELS" : []}
 
 
 class Economytrickle:
@@ -25,10 +32,6 @@ class Economytrickle:
         self.currentUser = {}
         self.tricklePot = {}
         self.previousDrip = {}
-        self.defaultSettings = {"TRICKLE_BOT" : False, "NEW_ACTIVE_BONUS" : 1, 
-                                "ACTIVE_BONUS_DEFLATE" : 1, "PAYOUT_INTERVAL" : 2, 
-                                "CHANCE_TO_PAYOUT" : 50, "PAYOUT_PER_ACTIVE" : 1, 
-                                "ACTIVE_TIMEOUT" : 10, "TOGGLE": False, "CHANNELS" : []}
 
     @commands.group(pass_context=True, no_pm=True)
     @checks.mod_or_permissions(manage_server=True)
@@ -39,7 +42,8 @@ class Economytrickle:
         Every active user gets the trickle amount. It is not distributed between active users.
         """
         server = ctx.message.server
-        settings = self.settings.setdefault(server.id, self.defaultSettings)
+        settings = self.settings.setdefault(server.id, 
+                                            deepcopy(DEFAULT_SETTINGS))
         if ctx.invoked_subcommand is None:
             await send_cmd_help(ctx)
             msg = "```"
@@ -70,14 +74,13 @@ class Economytrickle:
         settings = self.settings[server.id]
         context = context.lower()
 
-        toggled = not settings.get('TOGGLE', False)
+        toggled = not settings['TOGGLE']
         choices = {'channels': True, 'server': 'SERVER', 
                    'off': False, None: toggled}
 
         if context not in choices:
             return await send_cmd_help(ctx)
 
-        settings.setdefault('CHANNELS', [])  # back compat
         settings['TOGGLE'] = choices[context]
 
         msgs = {'SERVER': ('Trickling for all channels that '
@@ -115,11 +118,11 @@ class Economytrickle:
         author = ctx.message.author
         settings = self.settings[server.id]
         fmt = ''
-        if settings.get('TOGGLE', False) is not True:
+        if settings['TOGGLE'] is not True:
             fmt = ('Note: You will not see these changes take effect until you set '
                        '`{}trickleset server` to **channels**.\n'.format(ctx.prefix))
 
-        csets = settings.setdefault('CHANNELS', [])
+        csets = settings['CHANNELS']
         current = sorted(filter(None, (server.get_channel(c) for c in csets)),
                          key=lambda c: c.position)
         channels = set(one_or_more_channels)
@@ -283,7 +286,7 @@ class Economytrickle:
         #if different person speaking
         sid = message.server.id
         if sid not in self.settings:
-            self.settings[sid] = self.defaultSettings
+            self.settings[sid] = deepcopy(DEFAULT_SETTINGS)
             fileIO("data/economytrickle/settings.json", "save", self.settings)
         
         toggle = self.settings[sid]['TOGGLE']
@@ -374,6 +377,19 @@ def check_files():
     if not fileIO(f, "check"):
         print("Creating empty economytrickle's settings.json...")
         fileIO(f, "save", serverSettings)
+
+    settings = dataIO.load_json(f)
+    dirty = False
+    for v in settings.values():  # consistency check
+        missing_keys = set(DEFAULT_SETTINGS) - set(v)
+        fill = {k: DEFAULT_SETTINGS[k] for k in missing_keys}
+        v.update(fill)
+        if missing_keys:
+            dirty = True
+
+    if dirty:
+        dataIO.save_json(f, settings)
+
 
 
 #unload cog if economy isn't loaded
