@@ -72,7 +72,7 @@ class Economytrickle:
         author = ctx.message.author
 
         settings = self.settings[server.id]
-        context = context.lower()
+        context = context.lower() if context else context
 
         toggled = not settings['TOGGLE']
         choices = {'channels': True, 'server': 'SERVER', 
