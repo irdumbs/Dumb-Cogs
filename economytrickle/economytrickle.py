@@ -73,17 +73,23 @@ class Economytrickle:
         toggled = not settings.get('TOGGLE', False)
         choices = {'channels': True, 'server': 'SERVER', 
                    'off': False, None: toggled}
+
         if context not in choices:
             return await send_cmd_help(ctx)
 
+        settings.setdefault('CHANNELS', [])  # back compat
         settings['TOGGLE'] = choices[context]
 
-        if settings['TOGGLE']:
-            res = ('Trickling for all channels that '
-                   'the bot can see in this server')
+        msgs = {'SERVER': ('Trickling for all channels that '
+                           'the bot can see in this server'),
+                True    : ('Trickling only for channels listed '
+                           'in `{}trickleset channel`'),  # don care if empty
+                False   : 'Trickling turned off in this server'}
+
+        if context is None and settings['TOGGLE']:  # was toggled on
             settings['TOGGLE'] = 'SERVER'
-            if settings.setdefault('CHANNELS', []):
-                fmt = ("There channels in the `{}trickleset channel` list. "
+            if settings['CHANNELS']:
+                fmt = ("There are channels in the `{}trickleset channel` list. "
                        "Turn on trickling only for those channels "
                        "or for the whole server? (channels/server)")
                 await self.bot.say(fmt.format(ctx.prefix))
@@ -91,16 +97,12 @@ class Economytrickle:
                                                       author=author,
                                                       channel=channel)
                 if msg is None:
-                    res = ('no response. defaulting to trickling in '
-                           'channels listed in `{}trickleset channel`')
+                    msgs[True] = 'No Response. ' + msgs[True]
                     setting['TOGGLE'] = True
                 elif 'serv' not in msg.content.lower():
-                    res = ('Trickling only for channels listed '
-                           'in `{}trickleset channel`')
                     setting['TOGGLE'] = True
-        else:
-             res = 'Trickling turned off in this server'
-        await self.bot.say(res.format(ctx.prefix))
+
+        await self.bot.say(msgs[settings['TOGGLE']].format(ctx.prefix))
         dataIO.save_json("data/economytrickle/settings.json", self.settings)
 
     @trickleset.command(name="channel", pass_context=True)
