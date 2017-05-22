@@ -28,7 +28,7 @@ class Economytrickle:
         self.defaultSettings = {"TRICKLE_BOT" : False, "NEW_ACTIVE_BONUS" : 1, 
                                 "ACTIVE_BONUS_DEFLATE" : 1, "PAYOUT_INTERVAL" : 2, 
                                 "CHANCE_TO_PAYOUT" : 50, "PAYOUT_PER_ACTIVE" : 1, 
-                                "ACTIVE_TIMEOUT" : 10, "TOGGLE": False, "CHANNELS" = []}
+                                "ACTIVE_TIMEOUT" : 10, "TOGGLE": False, "CHANNELS" : []}
 
     @commands.group(pass_context=True, no_pm=True)
     @checks.mod_or_permissions(manage_server=True)
