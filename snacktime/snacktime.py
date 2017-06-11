@@ -117,7 +117,7 @@ class Snacktime:
         """snack stuff"""
         scid = ctx.message.server.id+"-"+ctx.message.channel.id
         if self.settings.get(scid, None) == None:
-            self.settings[scid] = self.defaultSettings
+            self.settings[scid] = deepcopy(self.defaultSettings)
             fileIO("data/snacktime/settings.json", "save", self.settings)
         if ctx.invoked_subcommand is None:
             msg = "```"
