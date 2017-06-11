@@ -6,9 +6,13 @@ import datetime
 import time
 import os
 import asyncio
+from copy import deepcopy
 from __main__ import send_cmd_help
-from .utils.dataIO import fileIO
+from .utils.dataIO import fileIO, dataIO
 from .utils import checks
+
+
+DEFAULT_SETTINGS = {"FRIENDS": False, "EVENT_START_DELAY": 1800, "EVENT_START_DELAY_VARIANCE": 900, "SNACK_DURATION": 240, "SNACK_DURATION_VARIANCE": 120, "MSGS_BEFORE_EVENT": 8, "SNACK_AMOUNT": 200}
 
 
 class Snacktime:
@@ -35,7 +39,6 @@ class Snacktime:
         self.repeatMissedSnacktimes = fileIO("data/snacktime/repeatMissedSnacktimes.json", "load")
         self.channels = fileIO("data/snacktime/channels.json", "load")
         self.settings = fileIO("data/snacktime/settings.json", "load")
-        self.defaultSettings = {"EVENT_START_DELAY": 1800, "EVENT_START_DELAY_VARIANCE": 900, "SNACK_DURATION": 240, "SNACK_DURATION_VARIANCE": 120, "MSGS_BEFORE_EVENT": 8, "SNACK_AMOUNT": 200}
         self.startPhrases = [
             "`ʕ •ᴥ•ʔ < It's snack time!`",
             "`ʕ •ᴥ•ʔ < I'm back with s'more snacks! Who wants!?`",
@@ -117,7 +120,7 @@ class Snacktime:
         """snack stuff"""
         scid = ctx.message.server.id+"-"+ctx.message.channel.id
         if self.settings.get(scid, None) == None:
-            self.settings[scid] = deepcopy(self.defaultSettings)
+            self.settings[scid] = deepcopy(DEFAULT_SETTINGS)
             fileIO("data/snacktime/settings.json", "save", self.settings)
         if ctx.invoked_subcommand is None:
             msg = "```"
@@ -409,6 +412,18 @@ def check_files():
     if not fileIO(f, "check"):
         print("Creating empty snacktime's repeatMissedSnacktimes.json...")
         fileIO(f, "save", {})
+
+    settings = dataIO.load_json(f)
+    dirty = False
+    for unit_settings in settings.values():  # consistency check
+        missing_keys = set(DEFAULT_SETTINGS) - set(unit_settings)
+        fill = {k: DEFAULT_SETTINGS[k] for k in missing_keys}
+        unit_settings.update(fill)
+        if missing_keys:
+            dirty = True
+
+    if dirty:
+        dataIO.save_json(f, settings)
 
 
 def setup(bot):
