@@ -14,30 +14,65 @@ from .utils import checks
 
 CUSTOM_DIR = "data/snacktime/custom_messages"
 
+DEFAULT_FRIENDS = [
+    "Pancakes",
+    "Mr Pickles",
+    "Satin",
+    "Thunky",
+    "Jingle",
+    "FluffButt",
+    "Urahorse",
+    "Staplefoot"
+]
+
 PHRASE_FILES = {
-    "SNACKTIME":   CUSTOM_DIR + "/start.txt",
-    "OUT":         CUSTOM_DIR + "/stop.txt",
-    "LONELY":      CUSTOM_DIR + "/lonely.txt",
-    "NO_TAKERS":   CUSTOM_DIR + "/no_takers.txt",
-    "GIVE":        CUSTOM_DIR + "/give.txt",
-    "LAST_SECOND": CUSTOM_DIR + "/last_second.txt",
-    "GREEDY":      CUSTOM_DIR + "/greedy.txt",
-    "NO_BANK":     CUSTOM_DIR + "/no_bank.txt",
-    "ENABLE":      CUSTOM_DIR + "/enable.txt",
-    "DISABLE":     CUSTOM_DIR + "/disable.txt"
+    "SNACKTIME":   "start.txt",
+    "OUT":         "stop.txt",
+    "LONELY":      "lonely.txt",
+    "NO_TAKERS":   "no_takers.txt",
+    "GIVE":        "give.txt",
+    "LAST_SECOND": "last_second.txt",
+    "GREEDY":      "greedy.txt",
+    "NO_BANK":     "no_bank.txt",
+    "ENABLE":      "enable.txt",
+    "DISABLE":     "disable.txt"
 }
 
 DEFAULT_SETTINGS = {"FRIENDS": False, "EVENT_START_DELAY": 1800, "EVENT_START_DELAY_VARIANCE": 900, "SNACK_DURATION": 240, "SNACK_DURATION_VARIANCE": 120, "MSGS_BEFORE_EVENT": 8, "SNACK_AMOUNT": 200}
 
 
+def ensure_friend_file_structure():
+    for friend_name in os.listdir(CUSTOM_DIR):
+        friend_path = os.path.join(CUSTOM_DIR, friend_name)
+        for phrase_file in PHRASE_FILES.values():
+            phrase_path = os.path.join(friend_path, phrase_file)
+            if not os.path.exists(phrase_path):
+                open(phrase_path, 'a').close()
+
+
 def load_customs():
-    customs = {}
-    for name, path in PHRASE_FILES:
-        with open(path) as f:
-            li = [line.strip() for line in f if line.strip()]
-            if not li:
-                return None
-            customs[name] = li
+    """
+    {
+        "Pancakes": {
+            "SNACKTIME": ['a', 'b', 'c'],
+            "OUT"...
+        }
+    }
+    """
+    ensure_friend_file_structure()
+    customs = {name: {} for name in os.listdir(CUSTOM_DIR)}
+    for friend_name in os.listdir(CUSTOM_DIR):  # go through all friend dirs
+        friend_path = os.path.join(CUSTOM_DIR, friend_name)
+
+        for phrase_group, phrase_file in PHRASE_FILES:  # each phrase file
+            phrase_path = os.path.join(friend_path, phrase_file)
+
+            with open(phrase_path) as f:
+                li = [line.strip() for line in f if line.strip()]
+                if not li:  # if a phrase file doesn't exist, remove friend
+                    del customs[friend_name]
+                    break
+                customs[friend_name][phrase_group] = li
     return customs
 
 
@@ -253,9 +288,10 @@ class Snacktime:
         2: only allow snackburr to chillax with you guys, or 
         3: kick snackburr out on the curb in favor of his obviously cooler friends?
 
-        *Invite them to the party by
-        adding messages to the files in data/snacktime/custom_messages!
-        
+        *Invite them to the party by adding friend folders
+        and messages to the files in data/snacktime/custom_messages/FRIEND_NAME!
+        There should alread be a blank friend folder there for you as an example.
+
         Each line counts as a message
 
         You can use {0} in last_second, give, no_bank, and greedy 
@@ -273,7 +309,7 @@ class Snacktime:
         scid = ctx.message.server.id+"-"+ctx.message.channel.id
 
         # TODO: only use one persona per snacktime
-        # TODO: allow multiple custom personas by using subdirectories
+        # DONE: allow multiple custom personas by using subdirectories
 
         choices = {
             1: ("both", "Everybody's invited!"),
@@ -481,6 +517,10 @@ def check_folders():
     if not os.path.exists(CUSTOM_DIR):
         print("Creating {} folder...".format(CUSTOM_DIR))
         os.makedirs(CUSTOM_DIR)
+    if not os.listdir(CUSTOM_DIR):
+        friend_dir = os.path.join(CUSTOM_DIR, randchoice(DEFAULT_FRIENDS))
+        print("Creating {} folder... (a default friend)".format(friend_dir))
+        os.makedirs(friend_dir)
 
 
 def check_files():
@@ -500,9 +540,7 @@ def check_files():
         print("Creating empty snacktime's repeatMissedSnacktimes.json...")
         fileIO(f, "save", {})
 
-    for v in PHRASE_FILES.values():
-        if not os.path.exists(v):
-            open(v, 'a').close()
+    ensure_friend_file_structure()
 
     settings = dataIO.load_json(f)
     dirty = False
