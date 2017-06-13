@@ -7,7 +7,7 @@ import time
 import os
 import asyncio
 from __main__ import send_cmd_help
-from .utils.dataIO import fileIO
+from .utils.dataIO import dataIO
 from .utils import checks
 
 class Snacktime:
@@ -30,9 +30,9 @@ class Snacktime:
         self.startLock = {}
         self.snacktimeCheckLock = {}
         self.lockRequests = {}
-        self.repeatMissedSnacktimes = fileIO("data/snacktime/repeatMissedSnacktimes.json", "load")
-        self.channels = fileIO("data/snacktime/channels.json", "load")
-        self.settings = fileIO("data/snacktime/settings.json", "load")
+        self.repeatMissedSnacktimes = dataIO.load_json("data/snacktime/repeatMissedSnacktimes.json")
+        self.channels = dataIO.load_json("data/snacktime/channels.json")
+        self.settings = dataIO.load_json("data/snacktime/settings.json")
         self.defaultSettings = {"EVENT_START_DELAY" : 1800, "EVENT_START_DELAY_VARIANCE" : 900, "SNACK_DURATION" : 240, "SNACK_DURATION_VARIANCE" : 120, "MSGS_BEFORE_EVENT" : 8, "SNACK_AMOUNT" : 200}
         self.startPhrases = [
             "`ʕ •ᴥ•ʔ < It's snack time!`",
@@ -116,7 +116,7 @@ class Snacktime:
         scid = ctx.message.server.id+"-"+ctx.message.channel.id
         if self.settings.get(scid, None) == None:
             self.settings[scid] = self.defaultSettings
-            fileIO("data/snacktime/settings.json", "save", self.settings)
+            dataIO.save_json("data/snacktime/settings.json", self.settings)
         if ctx.invoked_subcommand is None:
             msg = "```"
             for k, v in self.settings[scid].items():
@@ -136,7 +136,7 @@ class Snacktime:
         else:
             self.settings[scid]["EVENT_START_DELAY"] = seconds
             await self.bot.say("snackburr's errands will now take around " + str(self.settings[scid]["EVENT_START_DELAY"]/60) + " minutes!")
-            fileIO("data/snacktime/settings.json", "save", self.settings)
+            dataIO.save_json("data/snacktime/settings.json", self.settings)
 
     @snackset.command(pass_context=True)
     async def errandvariance(self, ctx, seconds : int):
@@ -149,7 +149,7 @@ class Snacktime:
         else:
             self.settings[scid]["EVENT_START_DELAY_VARIANCE"] = seconds
             await self.bot.say("snackburr now might be " + str(self.settings[scid]["EVENT_START_DELAY_VARIANCE"]/60) + " minutes early or late to snacktime")
-            fileIO("data/snacktime/settings.json", "save", self.settings)
+            dataIO.save_json("data/snacktime/settings.json", self.settings)
 
     @snackset.command(name="snacktime", pass_context=True)
     async def snacktimetime(self, ctx, seconds : int):
@@ -162,7 +162,7 @@ class Snacktime:
         else:
             self.settings[scid]["SNACK_DURATION"] = seconds
             await self.bot.say("snacktimes will now last around " + str(self.settings[scid]["SNACK_DURATION"]/60) + " minutes!")
-            fileIO("data/snacktime/settings.json", "save", self.settings)
+            dataIO.save_json("data/snacktime/settings.json", self.settings)
 
     @snackset.command(name="snackvariance", pass_context=True)
     async def snacktimevariance(self, ctx, seconds : int):
@@ -175,7 +175,7 @@ class Snacktime:
         else:
             self.settings[scid]["SNACK_DURATION_VARIANCE"] = seconds
             await self.bot.say("snackburr now may have to leave snacktime " + str(self.settings[scid]["SNACK_DURATION_VARIANCE"]/60) + " minutes early or late")
-            fileIO("data/snacktime/settings.json", "save", self.settings)
+            dataIO.save_json("data/snacktime/settings.json", self.settings)
 
     @snackset.command(pass_context=True)
     async def msgsneeded(self, ctx, amt : int):
@@ -186,7 +186,7 @@ class Snacktime:
         else:
             self.settings[scid]["MSGS_BEFORE_EVENT"] = amt
             await self.bot.say("snackburr will now wait until " + str(self.settings[scid]["MSGS_BEFORE_EVENT"]) + " messages pass until he comes with snacks")
-            fileIO("data/snacktime/settings.json", "save", self.settings)
+            dataIO.save_json("data/snacktime/settings.json", self.settings)
 
     @snackset.command(pass_context=True)
     async def amount(self, ctx, amt : int):
@@ -197,7 +197,7 @@ class Snacktime:
         else:
             self.settings[scid]["SNACK_AMOUNT"] = amt
             await self.bot.say("snackburr will now give out " + str(self.settings[scid]["SNACK_AMOUNT"]) + " pb max per person per snacktime.")
-            fileIO("data/snacktime/settings.json", "save", self.settings)
+            dataIO.save_json("data/snacktime/settings.json", self.settings)
 
     @snackset.command(pass_context=True)
     async def deliver(self, ctx):
@@ -206,7 +206,7 @@ class Snacktime:
         if scid not in self.channels.keys():
             self.channels[scid] = False
         self.channels[scid] = not self.channels[scid]
-        fileIO("data/snacktime/channels.json", "save", self.channels)
+        dataIO.save_json("data/snacktime/channels.json", self.channels)
         if self.channels[scid]:
             await self.bot.say("`ʕ •ᴥ•ʔ < Oh you guys want snacks?! Aight, I'll come around every so often to hand some out!`")
         else:
@@ -254,7 +254,7 @@ class Snacktime:
             if self.alreadySnacked.get(scid,False):
                 await self.bot.send_message(message.channel, randchoice(self.outPhrases))
                 self.repeatMissedSnacktimes[scid] = 0
-                fileIO("data/snacktime/repeatMissedSnacktimes.json", "save", self.repeatMissedSnacktimes)
+                dataIO.save_json("data/snacktime/repeatMissedSnacktimes.json", self.repeatMissedSnacktimes)
             else:
                 await self.bot.send_message(message.channel, randchoice(self.notakersPhrases))
                 self.repeatMissedSnacktimes[scid] = self.repeatMissedSnacktimes.get(scid,0) + 1
@@ -262,9 +262,9 @@ class Snacktime:
                 if self.repeatMissedSnacktimes[scid] > 9: #move to a setting
                     await self.bot.send_message(message.channel, "`ʕ •ᴥ•ʔ < I guess you guys don't like snacktimes.. I'll stop comin around.`")
                     self.channels[scid] = False
-                    fileIO("data/snacktime/channels.json", "save", self.channels)
+                    dataIO.save_json("data/snacktime/channels.json", self.channels)
                     self.repeatMissedSnacktimes[scid] = 0
-                fileIO("data/snacktime/repeatMissedSnacktimes.json", "save", self.repeatMissedSnacktimes)
+                dataIO.save_json("data/snacktime/repeatMissedSnacktimes.json", self.repeatMissedSnacktimes)
 
         except:
             print("Failed to send message")
@@ -393,19 +393,19 @@ def check_folders():
 def check_files():
 
     f = "data/snacktime/settings.json"
-    if not fileIO(f, "check"):
+    if not dataIO.is_valid_json(f):
         print("Creating empty snacktime's settings.json...")
-        fileIO(f, "save", {})
+        dataIO.save_json(f, {})
 
     f = "data/snacktime/channels.json"
-    if not fileIO(f, "check"):
+    if not dataIO.is_valid_json(f):
         print("Creating empty snacktime's channels.json...")
-        fileIO(f, "save", {})
+        dataIO.save_json(f, {})
 
     f = "data/snacktime/repeatMissedSnacktimes.json"
-    if not fileIO(f, "check"):
+    if not dataIO.is_valid_json(f):
         print("Creating empty snacktime's repeatMissedSnacktimes.json...")
-        fileIO(f, "save", {})
+        dataIO.save_json(f, {})
 
 def setup(bot):
     check_folders()
