@@ -12,11 +12,76 @@ from .utils.dataIO import fileIO, dataIO
 from .utils import checks
 
 
+CUSTOM_DIR = "data/snacktime/custom_messages"
+
+DEFAULT_FRIENDS = [
+    "Pancakes",
+    "Mr Pickles",
+    "Satin",
+    "Thunky",
+    "Jingle",
+    "FluffButt",
+    "Urahorse",
+    "Staplefoot"
+]
+
+PHRASE_FILES = {
+    "SNACKTIME":   "start.txt",
+    "OUT":         "stop.txt",
+    "LONELY":      "lonely.txt",
+    "NO_TAKERS":   "no_takers.txt",
+    "GIVE":        "give.txt",
+    "LAST_SECOND": "last_second.txt",
+    "GREEDY":      "greedy.txt",
+    "NO_BANK":     "no_bank.txt",
+    "ENABLE":      "enable.txt",
+    "DISABLE":     "disable.txt"
+}
+
 DEFAULT_SETTINGS = {"FRIENDS": False, "EVENT_START_DELAY": 1800, "EVENT_START_DELAY_VARIANCE": 900, "SNACK_DURATION": 240, "SNACK_DURATION_VARIANCE": 120, "MSGS_BEFORE_EVENT": 8, "SNACK_AMOUNT": 200}
 
 
+def ensure_friend_file_structure():
+    for friend_name in os.listdir(CUSTOM_DIR):
+        friend_path = os.path.join(CUSTOM_DIR, friend_name)
+        for phrase_file in PHRASE_FILES.values():
+            phrase_path = os.path.join(friend_path, phrase_file)
+            if not os.path.exists(phrase_path):
+                open(phrase_path, 'a').close()
+
+
+def load_customs():
+    """
+    {
+        "Pancakes": {
+            "SNACKTIME": ['a', 'b', 'c'],
+            "OUT"...
+        }
+    }
+    """
+    ensure_friend_file_structure()
+    customs = {name: {} for name in os.listdir(CUSTOM_DIR)}
+    for friend_name in os.listdir(CUSTOM_DIR):  # go through all friend dirs
+        friend_path = os.path.join(CUSTOM_DIR, friend_name)
+
+        for phrase_group, phrase_file in PHRASE_FILES:  # each phrase file
+            phrase_path = os.path.join(friend_path, phrase_file)
+
+            with open(phrase_path) as f:
+                li = [line.strip() for line in f if line.strip()]
+                if not li:  # if a phrase file doesn't exist, remove friend
+                    del customs[friend_name]
+                    break
+                customs[friend_name][phrase_group] = li
+    return customs
+
+
 class Snacktime:
-    """The Snackburr's passing out pb jars!"""
+    """The Snackburr's passing out pb jars!
+
+    Snackburr has some friends now! Invite them to the party by
+    adding messages to the files in data/snacktime/custom_messages!
+    """
 
     def __init__(self,bot):
         self.bot = bot
@@ -39,6 +104,7 @@ class Snacktime:
         self.repeatMissedSnacktimes = fileIO("data/snacktime/repeatMissedSnacktimes.json", "load")
         self.channels = fileIO("data/snacktime/channels.json", "load")
         self.settings = fileIO("data/snacktime/settings.json", "load")
+        self.customs = load_customs()
         self.startPhrases = [
             "`ʕ •ᴥ•ʔ < It's snack time!`",
             "`ʕ •ᴥ•ʔ < I'm back with s'more snacks! Who wants!?`",
@@ -97,6 +163,15 @@ class Snacktime:
             "`ʕ •ᴥ•ʔ < You don't have a pb bank account, {0}! But here ya go, you can just eat these {1} pb jars!`",
             "`ʕ •ᴥ•ʔ < Dang, {0}! You don't have a pb bank account. Are you just gonna eat these {1} pb jars?!`",
             "`ʕ •ᴥ•ʔ < {0}, you don't really have a place to put these {1} pb jars, but I'll give em to you to eat here n now :)`"
+        ]
+        self.enablePhrases = [
+            "`ʕ •ᴥ•ʔ < Oh you guys want snacks?! Aight, I'll come around every so often to hand some out!`"
+        ]
+        self.disablePhrases = [
+            "`ʕ •ᴥ•ʔ < You guys don't want snacks anymore? Alright, I'll stop comin around.`"
+        ]
+        self.lonelyPhrases = [
+            "`ʕ •ᴥ•ʔ < I guess you guys don't like snacktimes.. I'll stop comin around.`"
         ]
 
     #TODO:
@@ -204,6 +279,51 @@ class Snacktime:
             await self.bot.say("snackburr will now give out " + str(self.settings[scid]["SNACK_AMOUNT"]) + " pb max per person per snacktime.")
             fileIO("data/snacktime/settings.json", "save", self.settings)
 
+    @snackset.command(pass_context=True, name="friends")
+    async def snackset_friends(self, ctx, choice: int):
+        """snackburr's friends wanna know what all the hub-bub's about!
+
+        Do you want to 
+        1: invite them to the party, 
+        2: only allow snackburr to chillax with you guys, or 
+        3: kick snackburr out on the curb in favor of his obviously cooler friends?
+
+        *Invite them to the party by adding friend folders
+        and messages to the files in data/snacktime/custom_messages/FRIEND_NAME!
+        There should alread be a blank friend folder there for you as an example.
+
+        Each line counts as a message
+
+        You can use {0} in last_second, give, no_bank, and greedy 
+        to refer to the snacker
+        You can use {1} in last_second, give, and no_bank 
+        to specify snack amount"""
+        server = ctx.message.server
+        channel = ctx.message.channel
+        author = ctx.message.author
+
+        self.customs = load_customs()
+        if choice not in (1, 2, 3) or not self.customs:
+            return await send_cmd_help(ctx)
+
+        scid = ctx.message.server.id+"-"+ctx.message.channel.id
+
+        # TODO: only use one persona per snacktime
+        # DONE: allow multiple custom personas by using subdirectories
+
+        choices = {
+            1: ("both", "Everybody's invited!"),
+            2: (False, "You chose to not invite snackburr's friends"),
+            3: (True, "You kick snackburr out in favor of "
+                      "his friends! Ouch. Harsh..")
+        }
+        choice = choices[choice]
+
+        settings = self.settings[scid]
+        settings["FRIENDS"] = choice[0]
+        await self.bot.say(choice[1])
+        dataIO("data/snacktime/settings.json", self.settings)
+
     @snackset.command(pass_context=True)
     async def deliver(self, ctx):
         """Asks snackburr to start delivering to this channel"""
@@ -213,9 +333,9 @@ class Snacktime:
         self.channels[scid] = not self.channels[scid]
         fileIO("data/snacktime/channels.json", "save", self.channels)
         if self.channels[scid]:
-            await self.bot.say("`ʕ •ᴥ•ʔ < Oh you guys want snacks?! Aight, I'll come around every so often to hand some out!`")
+            await self.bot.say(randchoice(self.enablePhrases))
         else:
-            await self.bot.say("`ʕ •ᴥ•ʔ < You guys don't want snacks anymore? Alright, I'll stop comin around.`")
+            await self.bot.say(randchoice(self.disablePhrases))
 
     @commands.command(pass_context=True)
     async def snacktime(self, ctx):
@@ -264,7 +384,7 @@ class Snacktime:
                 self.repeatMissedSnacktimes[scid] = self.repeatMissedSnacktimes.get(scid,0) + 1
                 await asyncio.sleep(2)
                 if self.repeatMissedSnacktimes[scid] > 9: #move to a setting
-                    await self.bot.send_message(message.channel, "`ʕ •ᴥ•ʔ < I guess you guys don't like snacktimes.. I'll stop comin around.`")
+                    await self.bot.send_message(message.channel, randchoice(self.lonelyPhrases))
                     self.channels[scid] = False
                     fileIO("data/snacktime/channels.json", "save", self.channels)
                     self.repeatMissedSnacktimes[scid] = 0
@@ -394,6 +514,13 @@ def check_folders():
     if not os.path.exists("data/snacktime"):
         print("Creating data/snacktime folder...")
         os.makedirs("data/snacktime")
+    if not os.path.exists(CUSTOM_DIR):
+        print("Creating {} folder...".format(CUSTOM_DIR))
+        os.makedirs(CUSTOM_DIR)
+    if not os.listdir(CUSTOM_DIR):
+        friend_dir = os.path.join(CUSTOM_DIR, randchoice(DEFAULT_FRIENDS))
+        print("Creating {} folder... (a default friend)".format(friend_dir))
+        os.makedirs(friend_dir)
 
 
 def check_files():
@@ -412,6 +539,8 @@ def check_files():
     if not fileIO(f, "check"):
         print("Creating empty snacktime's repeatMissedSnacktimes.json...")
         fileIO(f, "save", {})
+
+    ensure_friend_file_structure()
 
     settings = dataIO.load_json(f)
     dirty = False
