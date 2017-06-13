@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from .utils.dataIO import fileIO
+from .utils.dataIO import dataIO
 from .utils import checks
 import os
 import aiohttp
@@ -15,7 +15,7 @@ class Sadface:
         self.url = "https://cdn.betterttv.net/emote/55028cd2135896936880fdd7/1x"
         self.sadLoaded = os.path.exists('data/sadface/sadface.png')
         self.image = "data/sadface/sadface.png"
-        self.servers = fileIO("data/sadface/servers.json", "load")
+        self.servers = dataIO.load_json("data/sadface/servers.json")
 
     # doesn't make sense to use this command in a pm, because pms aren't in servers
     # mod_or_permissions needs something in it otherwise it's mod or True which is always True
@@ -30,7 +30,7 @@ class Sadface:
         else:
             self.servers[server.id] = not self.servers[server.id]
         #for a toggle, settings should save here in case bot fails to send message
-        fileIO("data/sadface/servers.json", "save", self.servers)
+        dataIO.save_json("data/sadface/servers.json", self.servers)
         if self.servers[server.id]:
             await self.bot.say("Sadface on. Please turn this off in the Red - DiscordBot server. This is only an example cog.")
         else:
@@ -85,10 +85,11 @@ def check_folders():
 def check_files():
     # create server.json if not there
     # put in default values
+    f = "data/sadface/servers.json"
     default = {}
-    if not os.path.isfile("data/sadface/servers.json"):
+    if not dataIO.is_valid_json(f):
         print("Creating default sadface servers.json...")
-        fileIO("data/sadface/servers.json", "save", default)
+        dataIO.save_json(f, default)
 
 
 def setup(bot):
