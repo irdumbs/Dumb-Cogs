@@ -113,7 +113,7 @@ class Economytrickle:
     async def tricklebase(self, ctx, state: str, baseamount: float=None):
         """Set the base payout and state of base payout
 
-        Current states: on, off, alone
+        Current states: on, off, alone. Defaulted to off
         
         state on: Current algorithm + baseamount is trickled
         
@@ -135,9 +135,10 @@ class Economytrickle:
             self.settings[server.id]["BASE_PAYOUT_STATE"] = "alone"
         else:
             msg = "The state you have entered doesn't seem to exist buddy.\n"
+            return
 
         if baseamount is None:
-            msg += ""
+            pass
         elif baseamount >= 0:
             msg += "The base payout has been changed to: {}" .format(baseamount)
             self.settings[server.id]["BASE_PAYOUT"] = baseamount
@@ -145,6 +146,7 @@ class Economytrickle:
             msg += "You can't have a base amount less than 0"
 
         await self.bot.say(msg)
+        dataIO.save_json("data/economytrickle/settings.json", self.settings)
 
     @trickleset.command(name="channel", pass_context=True)
     async def channel(self, ctx, *one_or_more_channels: discord.Channel):
@@ -370,7 +372,7 @@ class Economytrickle:
              message.author.id != self.bot.user.id) and
                 current_user != message.author.id):
             # print("----Trickle----")
-            # add user or update timestamp and make them current user
+            # add user or update timestamp and make him current user
             self.currentUser[sid] = message.author.id
             now = datetime.datetime.now()
             # new active user bonus
@@ -416,11 +418,6 @@ class Economytrickle:
                                          self.tricklePot[sid])
                     elif self.settings[sid]["BASE_PAYOUT_STATE"] == "alone":
                         trickleAmt = self.settings[sid]["BASE_PAYOUT"]
-                    else:
-                        trickleAmt = int((numActive - 1) *
-                                         self.settings[sid]["PAYOUT_PER_ACTIVE"] +
-                                         self.tricklePot[sid])
-                        
                 # debug
                 debug = "{} - trickle: {} > ".format(message.server.name,
                                                      trickleAmt)
