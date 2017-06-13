@@ -5,7 +5,7 @@ import datetime
 import time
 import os
 import asyncio
-from .utils.dataIO import fileIO
+from .utils.dataIO import dataIO
 from .utils import checks
 from __main__ import send_cmd_help
 
@@ -20,7 +20,7 @@ class Economytrickle:
 
     def __init__(self,bot):
         self.bot = bot
-        self.settings = fileIO("data/economytrickle/settings.json", "load")
+        self.settings = dataIO.load_json("data/economytrickle/settings.json")
         self.activeUsers = {}
         self.currentUser = {}
         self.tricklePot = {}
@@ -55,7 +55,7 @@ class Economytrickle:
                 await self.bot.say("I will now get currency trickled to me.")
             else:
                 await self.bot.say("I will stop getting currency trickled to me.")
-            fileIO("data/economytrickle/settings.json", "save", self.settings)
+            dataIO.save_json("data/economytrickle/settings.json", self.settings)
         else:
             await self.bot.say("I do not have an account registered with the `Economy cog`. If you want currency to trickle to me too, please use the `registerbot` command to open an account for me, then try again.")
 
@@ -69,7 +69,7 @@ class Economytrickle:
             return
         self.settings[sid]["ACTIVE_TIMEOUT"] = minutes
         await self.bot.say("Active user timeout is now: " + str(self.settings[sid]["ACTIVE_TIMEOUT"]))
-        fileIO("data/economytrickle/settings.json", "save", self.settings)
+        dataIO.save_json("data/economytrickle/settings.json", self.settings)
 
     @trickleset.command(name="interval", pass_context=True)
     async def interval(self, ctx, minutes : float):
@@ -80,7 +80,7 @@ class Economytrickle:
             await self.bot.say("```Warning: With an interval this low, a trickle will occur after every message```")
         self.settings[sid]["PAYOUT_INTERVAL"] = minutes
         await self.bot.say("Payout interval is now: " + str(self.settings[sid]["PAYOUT_INTERVAL"]))
-        fileIO("data/economytrickle/settings.json", "save", self.settings)
+        dataIO.save_json("data/economytrickle/settings.json", self.settings)
 
     @trickleset.command(name="multiplier", pass_context=True)
     async def multiplier(self, ctx, amt : float):
@@ -91,7 +91,7 @@ class Economytrickle:
             await self.bot.say("```Warning: A negative multiplier would be taking away currency the more active users you have. This will discourage conversations.```")
         self.settings[sid]["PAYOUT_PER_ACTIVE"] = amt
         await self.bot.say("Base payout per active user is now: " + str(self.settings[sid]["PAYOUT_PER_ACTIVE"]))
-        fileIO("data/economytrickle/settings.json", "save", self.settings)
+        dataIO.save_json("data/economytrickle/settings.json", self.settings)
 
     @trickleset.command(name="bonus", pass_context=True)
     async def activebonus(self, ctx, amt : int):
@@ -104,7 +104,7 @@ class Economytrickle:
             await self.bot.say("```Warning: Bonus amount should be positive unless you want to discourage conversations```")
         self.settings[sid]["NEW_ACTIVE_BONUS"] = amt
         await self.bot.say("Bonus per new active user is now: " + str(self.settings[sid]["NEW_ACTIVE_BONUS"]))
-        fileIO("data/economytrickle/settings.json", "save", self.settings)
+        dataIO.save_json("data/economytrickle/settings.json", self.settings)
 
     @trickleset.command(name="leak", pass_context=True)
     async def bonusdeflate(self, ctx, amt : int):
@@ -117,7 +117,7 @@ class Economytrickle:
             await self.bot.say("```Warning: The bonus pot does not reset each trickle. With a negative leak, the bonus pot will grow each time a trickle occurs.```")
         self.settings[sid]["ACTIVE_BONUS_DEFLATE"] = amt
         await self.bot.say("Bonus pot leak is now: " + str(self.settings[sid]["ACTIVE_BONUS_DEFLATE"]))
-        fileIO("data/economytrickle/settings.json", "save", self.settings)
+        dataIO.save_json("data/economytrickle/settings.json", self.settings)
 
     @trickleset.command(name="chance", pass_context=True)
     async def succeedchance(self, ctx, percentage : int):
@@ -131,7 +131,7 @@ class Economytrickle:
             await self.bot.say("```Warning: This will stop all trickling. You might as well just unload cogs.economytrickle```")
         self.settings[sid]["CHANCE_TO_PAYOUT"] = percentage
         await self.bot.say("Successful trickle chance is now: " + str(self.settings[sid]["CHANCE_TO_PAYOUT"]))
-        fileIO("data/economytrickle/settings.json", "save", self.settings)
+        dataIO.save_json("data/economytrickle/settings.json", self.settings)
 
     #if Economy.py updates, this may break
     @commands.command(pass_context=True, no_pm=True)
@@ -171,7 +171,7 @@ class Economytrickle:
         sid = message.server.id
         if self.settings.get(sid,None) is None:
             self.settings[sid] = self.defaultSettings
-            fileIO("data/economytrickle/settings.json", "save", self.settings)
+            dataIO.save_json("data/economytrickle/settings.json", self.settings)
         if (self.settings[sid]["TRICKLE_BOT"] or message.author.id != self.bot.user.id) and self.currentUser.get(message.server.id,None) != message.author.id:
             #print("----Trickle----")
             # add user or update timestamp and make him current user
@@ -252,9 +252,9 @@ def check_files():
     serverSettings = {}
 
     f = "data/economytrickle/settings.json"
-    if not fileIO(f, "check"):
+    if not dataIO.is_valid_json(f):
         print("Creating empty economytrickle's settings.json...")
-        fileIO(f, "save", serverSettings)
+        dataIO.save_json(f, serverSettings)
 
 
 #unload cog if economy isn't loaded
