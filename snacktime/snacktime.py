@@ -141,7 +141,8 @@ def load_customs():
     for friend_name in os.listdir(CUSTOM_DIR):  # go through all friend dirs
         friend_path = os.path.join(CUSTOM_DIR, friend_name)
 
-        for phrase_group, phrase_file in PHRASE_FILES.items():  # each phrase file
+        # each phrase file
+        for phrase_group, phrase_file in PHRASE_FILES.items():
             phrase_path = os.path.join(friend_path, phrase_file)
 
             with open(phrase_path) as f:
