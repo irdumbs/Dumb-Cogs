@@ -116,6 +116,14 @@ DEFAULT_SETTINGS = {"FRIENDS": False, "EVENT_START_DELAY": 1800,
                     "SNACK_AMOUNT": 200}
 
 
+def persist_snackburr():
+    for phrase_type, lines in SNACKBURR_PHRASES.items():
+        fname = PHRASE_FILES[phrase_type]
+        fpath = os.path.join(CUSTOM_DIR, 'snackburr', fname)
+        with open(fpath, 'w') as f:
+            f.write('\n'.join(lines))
+
+
 def ensure_friend_file_structure():
     for friend_name in os.listdir(CUSTOM_DIR):
         if friend_name == 'snackburr':
@@ -137,8 +145,12 @@ def load_customs():
     }
     """
     ensure_friend_file_structure()
-    customs = {name: {} for name in os.listdir(CUSTOM_DIR)}
-    for friend_name in os.listdir(CUSTOM_DIR):  # go through all friend dirs
+    customs = {name: {}
+               for name in os.listdir(CUSTOM_DIR)
+               if name != 'snackburr'}
+    for friend_name in customs.copy():  # go through all friend dirs
+        # TODO: see why it complains about size of customs changing
+        #       during iteration
         friend_path = os.path.join(CUSTOM_DIR, friend_name)
 
         # each phrase file
@@ -315,9 +327,9 @@ class Snacktime:
     async def snackset_friends(self, ctx, choice: int):
         """snackburr's friends wanna know what all the hub-bub's about!
 
-        Do you want to 
-        1: invite them to the party, 
-        2: only allow snackburr to chillax with you guys, or 
+        Do you want to
+        1: invite them to the party,
+        2: only allow snackburr to chillax with you guys, or
         3: kick snackburr out on the curb in favor of his obviously cooler friends?
 
         *Invite them to the party by adding friend folders
@@ -326,9 +338,9 @@ class Snacktime:
 
         Each line counts as a message
 
-        You can use {0} in last_second, give, no_bank, and greedy 
+        You can use {0} in last_second, give, no_bank, and greedy
         to refer to the snacker
-        You can use {1} in last_second, give, and no_bank 
+        You can use {1} in last_second, give, and no_bank
         to specify snack amount"""
         server = ctx.message.server
         channel = ctx.message.channel
@@ -340,9 +352,9 @@ class Snacktime:
 
         scid = ctx.message.server.id+"-"+ctx.message.channel.id
 
-        # TODO: only use one persona per snacktime
+        # DONE: only use one persona per snacktime
         # DONE: allow multiple custom personas by using subdirectories
-        # TODO: Write snackburr's text to file as an example
+        # DONE: Write snackburr's text to file as an example
 
         choices = {
             1: ("both", "Everybody's invited!"),
@@ -552,6 +564,10 @@ def check_folders():
     if not os.path.exists(CUSTOM_DIR):
         print("Creating {} folder...".format(CUSTOM_DIR))
         os.makedirs(CUSTOM_DIR)
+    burrdir = os.path.join(CUSTOM_DIR, 'snackburr')
+    if not os.path.exists(burrdir):
+        print("Creating {} folder...".format(burrdir))
+        os.makedirs(burrdir)
     if not os.listdir(CUSTOM_DIR):
         friend_dir = os.path.join(CUSTOM_DIR, randchoice(DEFAULT_FRIENDS))
         print("Creating {} folder... (a default friend)".format(friend_dir))
@@ -575,6 +591,7 @@ def check_files():
         print("Creating empty snacktime's repeatMissedSnacktimes.json...")
         fileIO(f, "save", {})
 
+    persist_snackburr()
     ensure_friend_file_structure()
 
     settings = dataIO.load_json(f)
