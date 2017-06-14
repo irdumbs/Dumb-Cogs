@@ -3273,7 +3273,7 @@ def check_files():
 
     files = {'teams.json' : {}, 'settings.json' : {}}
     for file, default in files.items():
-        if not dataIO.is_valid_json(base_path + file):
+        if not os.path.isfile(base_path + file):
             print("Creating default adventure {}...".format(file))
             dataIO.save_json(base_path + file, default)
         else:  # consistency check
