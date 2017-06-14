@@ -28,7 +28,7 @@ import asyncio
 import os
 import glob
 from __main__ import send_cmd_help
-from cogs.utils.dataIO import fileIO
+from cogs.utils.dataIO import dataIO
 import shutil
 from random import choice
 
@@ -2361,7 +2361,7 @@ class Adventure:
         # serv_li = os.listdir(save_path)
         # for sv in serv_li:
         #     self.saves[sv] = os.listdir(save_path + sv)
-        self.teams = fileIO('data/adventure/teams.json', 'load')
+        self.teams = dataIO.load_json('data/adventure/teams.json')
 
         self.game = {} # temp for testing
 
@@ -2469,7 +2469,7 @@ class Adventure:
                 self.teams[server.id]["MEMBERS"][author.id] = [team]
             else:
                 self.teams[server.id]["MEMBERS"][author.id].append(team)
-            fileIO('data/adventure/teams.json', 'save', self.teams)
+            dataIO.save_json('data/adventure/teams.json', self.teams)
             #print('updated adventure\'s teams.json with '+team)
         else: # existing team
             if author.id not in self.teams[server.id]["TEAMS"][team]["MEMBERS"]:
@@ -2838,7 +2838,7 @@ class Adventure:
             self.teams[server.id]["MEMBERS"][user.id] = [team]
         else:
             self.teams[server.id]["MEMBERS"][user.id].append(team)
-        fileIO('data/adventure/teams.json', 'save', self.teams)
+        dataIO.save_json('data/adventure/teams.json', self.teams)
         await self.bot.say('{} recruits {} to be part of the {} team!'.format(author.mention, user.mention, tname))
 
     
@@ -2993,7 +2993,7 @@ class Adventure:
         for tmid in to_remove:
             self.teams[server.id]["TEAMS"][team]["MEMBERS"].remove(tmid)
             print('removed {}. {} team member must have left server.'.format(tmid, team))
-        fileIO('data/adventure/teams.json', 'save', self.teams)
+        dataIO.save_json('data/adventure/teams.json', self.teams)
         if leaders == [] and err_out:
             raise NoTeamMembers('No more team members in {} team'.format(team))
         else:
@@ -3033,7 +3033,7 @@ class Adventure:
             if pid in self.teams[server.id]["MEMBERS"]: # it better be
                 if team in self.teams[server.id]["MEMBERS"][pid]: # it better be
                     self.teams[server.id]["MEMBERS"][pid].remove(team)
-        fileIO('data/adventure/teams.json', 'save', self.teams)
+        dataIO.save_json('data/adventure/teams.json', self.teams)
         # saves
         del self.saves[server.id][team]
         # path
@@ -3275,16 +3275,16 @@ def check_files():
     for file, default in files.items():
         if not os.path.isfile(base_path + file):
             print("Creating default adventure {}...".format(file))
-            fileIO(base_path + file, "save", default)
+            dataIO.save_json(base_path + file, default)
         else:  # consistency check
-            current = fileIO(base_path + file, "load")
+            current = dataIO.load_json(base_path + file)
             if current.keys() != default.keys():
                 for key in default.keys():
                     if key not in current.keys():
                         current[key] = default[key]
                         print(
                             "Adding " + str(key) + " field to adventure {}".format(file))
-                fileIO(base_path + file, "save", current)
+                dataIO.save_json(base_path + file, current)
         
 
 

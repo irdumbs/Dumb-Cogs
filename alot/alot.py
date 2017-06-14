@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from .utils.dataIO import fileIO
+from .utils.dataIO import dataIO
 from .utils import checks
 from random import randint
 from random import choice as randchoice
@@ -25,8 +25,8 @@ class Alot:
         self.bot = bot
         self.numAlotted = 0
         self.alotOfAvatar = "http://static.tvtropes.org/pmwiki/pub/images/alot2258.jpg"
-        self.settings = fileIO("data/alot/settings.json", "load")
-        alots = fileIO("data/alot/alots.json", "load")
+        self.settings = dataIO.load_json("data/alot/settings.json")
+        alots = dataIO.load_json("data/alot/alots.json")
         self.alotTags = alots["TAGS"]
         self.alots = alots["URLS"]
         self.keyRegex = re.compile("\\b"+"("+"|".join(self.alotTags.keys())+")")
@@ -45,7 +45,7 @@ class Alot:
         else:
             self.settings["SERVERS"][server.id] = not self.settings["SERVERS"][server.id]
         #for a toggle, settings should save here in case bot fails to send message
-        fileIO("data/alot/settings.json", "save", self.settings)
+        dataIO.save_json("data/alot/settings.json", self.settings)
         if self.settings["SERVERS"][server.id]:
             await self.bot.say("The alots are here! \o/")
         else:
@@ -103,11 +103,12 @@ def check_folders():
 
 def check_files():
     default = {"SERVERS" : {}}
-    if not os.path.isfile("data/alot/settings.json"):
+    f = "data/alot/settings.json"
+    if not dataIO.is_valid_json(f):
         print("Creating default alot settings.json...")
-        fileIO("data/alot/settings.json", "save", default)
+        dataIO.save_json(f, default)
 
-    if not os.path.isfile("data/alot/alots.json"):
+    if not dataIO.is_valid_json("data/alot/alots.json"):
         raise AlotsMissing('alots.json is missing. [p]cog update this cog')
 
 def setup(bot):
