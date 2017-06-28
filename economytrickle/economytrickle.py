@@ -10,6 +10,7 @@ from copy import deepcopy
 
 
 DEFAULT_SETTINGS = {"TRICKLE_BOT": False, "NEW_ACTIVE_BONUS": 1,
+                    "BASE_PAYOUT_STATE" : "off", "BASE_PAYOUT" : 5,
                     "ACTIVE_BONUS_DEFLATE": 1, "PAYOUT_INTERVAL": 2,
                     "CHANCE_TO_PAYOUT": 50, "PAYOUT_PER_ACTIVE": 1,
                     "ACTIVE_TIMEOUT": 10, "TOGGLE": False, "CHANNELS": []}
@@ -106,6 +107,45 @@ class Economytrickle:
                     settings['TOGGLE'] = True
 
         await self.bot.say(msgs[settings['TOGGLE']].format(ctx.prefix))
+        dataIO.save_json("data/economytrickle/settings.json", self.settings)
+
+    @trickleset.command(name="base", pass_context=True)
+    async def tricklebase(self, ctx, state: str, baseamount: float=None):
+        """Set the base payout and state of base payout
+
+        Current states: on, off, alone. Defaulted to off
+        
+        state on: Current algorithm + baseamount is trickled
+        
+        state off: Current currency algorithm is trickled
+        
+        state alone: Only the set baseamount is trickled
+        """
+        server = ctx.message.server
+        if state.lower() == self.settings[server.id]["BASE_PAYOUT_STATE"]:
+            msg = "This state is already active\n"       
+        elif state.lower() == "on":
+            msg = "The base payout state has been changed to: on\n"
+            self.settings[server.id]["BASE_PAYOUT_STATE"] = "on"
+        elif state.lower() == "off":
+            msg = "The base payout state has been changed to: off\n"
+            self.settings[server.id]["BASE_PAYOUT_STATE"] = "off"
+        elif state.lower() == "alone":
+            msg = "The base payout state has been changed to: alone\n"
+            self.settings[server.id]["BASE_PAYOUT_STATE"] = "alone"
+        else:
+            msg = "The state you have entered doesn't seem to exist buddy.\n"
+            return
+
+        if baseamount is None:
+            pass
+        elif baseamount >= 0:
+            msg += "The base payout has been changed to: {}" .format(baseamount)
+            self.settings[server.id]["BASE_PAYOUT"] = baseamount
+        elif baseamount < 0:
+            msg += "You can't have a base amount less than 0"
+
+        await self.bot.say(msg)
         dataIO.save_json("data/economytrickle/settings.json", self.settings)
 
     @trickleset.command(name="channel", pass_context=True)
@@ -367,9 +407,17 @@ class Economytrickle:
                     # don't want bot to add to payout
                     if self.bot.user.id in self.activeUsers[sid]:
                         numActive -= 1
-                    trickleAmt = int((numActive - 1) *
-                                     self.settings[sid]["PAYOUT_PER_ACTIVE"] +
-                                     self.tricklePot[sid])
+                    if self.settings[sid]["BASE_PAYOUT_STATE"] == "on":
+                        trickleAmt = int((numActive - 1) *
+                                         self.settings[sid]["PAYOUT_PER_ACTIVE"] +
+                                         self.tricklePot[sid] +
+                                         self.settings[sid]["BASE_PAYOUT"])
+                    elif self.settings[sid]["BASE_PAYOUT_STATE"] == "alone":
+                        trickleAmt = self.settings[sid]["BASE_PAYOUT"]
+                    else:
+                        trickleAmt = int((numActive - 1) *
+                                         self.settings[sid]["PAYOUT_PER_ACTIVE"] +
+                                         self.tricklePot[sid])
                 # debug
                 debug = "{} - trickle: {} > ".format(message.server.name,
                                                      trickleAmt)
