@@ -412,12 +412,12 @@ class Economytrickle:
                                          self.settings[sid]["PAYOUT_PER_ACTIVE"] +
                                          self.tricklePot[sid] +
                                          self.settings[sid]["BASE_PAYOUT"])
-                    elif self.settings[sid]["BASE_PAYOUT_STATE"] == "off":
+                    elif self.settings[sid]["BASE_PAYOUT_STATE"] == "alone":
+                        trickleAmt = self.settings[sid]["BASE_PAYOUT"]
+                    else:
                         trickleAmt = int((numActive - 1) *
                                          self.settings[sid]["PAYOUT_PER_ACTIVE"] +
                                          self.tricklePot[sid])
-                    elif self.settings[sid]["BASE_PAYOUT_STATE"] == "alone":
-                        trickleAmt = self.settings[sid]["BASE_PAYOUT"]
                 # debug
                 debug = "{} - trickle: {} > ".format(message.server.name,
                                                      trickleAmt)
