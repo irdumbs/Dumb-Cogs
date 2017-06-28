@@ -3,7 +3,7 @@ from discord.ext import commands
 from random import uniform as randfloat
 import asyncio
 import os
-from .utils.dataIO import fileIO
+from .utils.dataIO import dataIO
 import re
 from __main__ import send_cmd_help
 
@@ -12,7 +12,7 @@ class Untableflip:
 
 	def __init__(self, bot):
 		self.bot = bot
-		self.settings = fileIO("data/noflippedtables/settings.json", "load")
+		self.settings = dataIO.load_json("data/noflippedtables/settings.json")
 		self.flippedTables = {}
 
 	@commands.group(pass_context=True)
@@ -34,7 +34,7 @@ class Untableflip:
 			await self.bot.say("All tables will now be unflipped.")
 		else:
 			await self.bot.say("Now only one table unflipped per message.")
-		fileIO("data/noflippedtables/settings.json", "save", self.settings)
+		dataIO.save_json("data/noflippedtables/settings.json", self.settings)
 
 	@tableset.command(name="flipbot")
 	async def flipbot(self):
@@ -44,7 +44,7 @@ class Untableflip:
 			await self.bot.say("Bot is now allowed to leave its own tables flipped")
 		else:
 			await self.bot.say("Bot must now unflip tables that itself flips")
-		fileIO("data/noflippedtables/settings.json", "save", self.settings)
+		dataIO.save_json("data/noflippedtables/settings.json", self.settings)
 
 	#so much fluff just for this OpieOP
 	async def scrutinize_messages(self, message):
@@ -99,9 +99,9 @@ def check_folders():
 def check_files():
 	settings = {"ALL_TABLES" : True, "BOT_EXEMPT" : False}
 	f = "data/noflippedtables/settings.json"
-	if not fileIO(f, "check"):
+	if not dataIO.is_valid_json(f):
 		print("Creating settings.json...")
-		fileIO(f, "save", settings)
+		dataIO.save_json(f, settings)
 
 def setup(bot):
 	check_folders()
