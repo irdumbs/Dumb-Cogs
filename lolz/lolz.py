@@ -15,7 +15,7 @@
 
 from discord.ext import commands
 import discord.utils
-from .utils.dataIO import fileIO
+from .utils.dataIO import dataIO
 import logging
 import asyncio
 import re
@@ -57,8 +57,8 @@ class Lolz:
         }
 
         self.cached = {}
-        self.settings = fileIO("data/lolz/settings.json", "load")
-        self.tranzlashun = fileIO("data/lolz/tranzlashun.json", "load")
+        self.settings = dataIO.load_jsonn"data/lolz/settings.json")
+        self.tranzlashun = dataIO.load_json("data/lolz/tranzlashun.json")
 
         self._monkeymanager = self.bot.loop.create_task(self.patcher())
 
@@ -87,7 +87,7 @@ class Lolz:
         else:
             await self.bot.say("You don't have permission to touch the lolz.")
             return
-        fileIO("data/lolz/settings.json", "save", self.settings)
+        dataIO.save_json("data/lolz/settings.json", self.settings)
 
     # This is bad. If you're reading this, you're probably trying to find out how it does what it does.
     # Please head to Red's #testing/#coding channels and ask for help from the contributors listed above
@@ -283,15 +283,15 @@ def check_files():
 
     if not os.path.isfile(settings_path):
         print("Creating default lolz settings.json...")
-        fileIO(settings_path, "save", default_settings)
+        dataIO.save_json(settings_path, default_settings)
     else: #consistency check
-        current = fileIO(settings_path, "load")
+        current = dataIO.load_json(settings_path)
         if current.keys() != default_settings.keys():
             for key in default_settings.keys():
                 if key not in current.keys():
                     current[key] = default_settings[key]
                     print("Adding " + str(key) + " field to lolz settings.json")
-            fileIO(settings_path, "save", current)
+            dataIO.save_json(settings_path, current)
 
 
 def setup(bot):
