@@ -15,7 +15,7 @@
 
 from discord.ext import commands
 import discord.utils
-from .utils.dataIO import fileIO
+from .utils.dataIO import fileIO, dataIO
 import logging
 import asyncio
 import re
@@ -28,7 +28,9 @@ from __main__ import settings
 log = logging.getLogger(__name__)
 request_logging_format = '{method} {response.url} has returned {response.status}'
 request_success_log = '{response.url} with {json} received {data}'
-
+mvs = '᠎'
+nbs = '﻿'
+LOLZ_PREFIX = nbs + mvs + nbs
 
 default_settings = {"SERVER": {"DEFAULT": False}, "DM": {"DEFAULT" : False}}
 
@@ -73,7 +75,7 @@ class Lolz:
         key = "SERVER"
         if server is None or check_mod(ctx):
             if server is None:
-                server = ctx.message.author
+                server = ctx.message.channel or ctx.message.author
                 key = "DM"
             if server.id not in self.settings[key]:
                 self.settings[key][
@@ -102,19 +104,10 @@ class Lolz:
             content = content and str(content)
 
             # replaced _resolve_destination. assume not getting Object
-            channel = self.bot.get_channel(destination.id)
-            # channel should be PrivateChannel, Channel, or None here.
-            is_private = not hasattr(channel, 'is_private') or channel.is_private
-            server_on = not is_private and self.settings["SERVER"].get(channel.server.id, False)
-            dm_on = (channel and is_private and self.settings["DM"].get(channel.user.id, False)
-                ) or (channel is None and self.settings["DM"].get(destination.id, False))
-
-            if server_on or dm_on:
-                if content:
-                    # if not a link -- moved to sentence
-                    content = self.translate_sentence(content)
-                if embed:
-                    self.in_place_translate_embed(embed)
+            chan_or_id = self.bot.get_channel(destination.id) or destination.id
+            # channel should be PrivateChannel, Channel, or id here.
+            if self.can_lolz(chan_or_id):
+                content, embed = self.translate_message(content, embed)
 
             # msg = await old_send(self.bot, destination, content, *args,
             # **kwargs)
@@ -122,8 +115,48 @@ class Lolz:
             return msg
 
         predicate.old = old_send
-
         return predicate
+
+    def edit_lolz(self, old_edit):
+        async def predicate(message, new_content=None, *args, **kwargs):
+            embed = kwargs.get('embed', None)
+            content = new_content and str(new_content)
+
+            chan_or_id = message.channel or message.author.id
+
+            if self.can_lolz(chan_or_id):
+                content, embed = self.translate_message(content, embed)
+
+            msg = await old_edit(message, content, *args, **kwargs)
+            return msg
+
+        predicate.old = old_edit
+        return predicate
+
+    def can_lolz(self, chan_or_id):
+        # channel should be PrivateChannel, Channel, or id.
+        if isinstance(chan_or_id, str):
+            return self.settings["DM"].get(chan_or_id, False)
+
+        # if no is_private, it should be private.
+        # might not be relevant with the above handling strings
+        is_private = getattr(chan_or_id, 'is_private', True)
+        server_on = (not is_private and
+                     self.settings["SERVER"].get(chan_or_id.server.id, False))
+
+        dm_on = (is_private and
+                 self.settings["DM"].get(chan_or_id.user.id, False))
+
+        return server_on or dm_on
+
+    def translate_message(self, content=None, embed=None):
+        if content:
+            # if not a link -- moved to sentence
+            content = self.translate_sentence(content)
+        if embed:
+            self.in_place_translate_embed(embed)
+        content = LOLZ_PREFIX + (content or '')  # for tracking
+        return content, embed
 
     def in_place_translate_embed(self, embed):
         # not sure what provider is
@@ -232,18 +265,15 @@ class Lolz:
     async def patcher(self):
         await self.bot.wait_until_ready()
         try:
-            await asyncio.sleep(6)  # be safe lolz
+            await asyncio.sleep(5)  # be safe lolz
             while True:
-                if not hasattr(self.bot.send_message, 'old'):
-                    print(
-                        '[WARNING:] -- Overwriting bot.send_message with '
-                        'send_lolz. If bot.send_message is not reloaded,')
-                    print(
-                        '[WARNING:] -- in the event of a crash of the lolz '
-                        'cog, you may not be able revert to bot.send_message '
-                        'without a restart/reloading lolz')
-                    self.bot.send_message = self.send_lolz(self.bot.send_message)
                 await asyncio.sleep(1)
+                if not hasattr(self.bot.send_message, 'old'):
+                    self.info_prompt('WARNING', 'send_message')
+                    self.bot.send_message = self.send_lolz(self.bot.send_message)
+                if not self.bot.user.bot and not hasattr(self.bot.edit_message, 'old'):
+                    self.info_prompt('WARNING', 'edit_message')
+                    self.bot.edit_message = self.edit_lolz(self.bot.edit_message)
         except asyncio.CancelledError:
             pass
 
@@ -251,14 +281,45 @@ class Lolz:
         self._monkeymanager.cancel()
         # revert any changes done with this method. we should check instead for only lolz override
         if hasattr(self.bot.send_message, 'old'):
-            print('[CLEANUP:] -- Trying to reload old self.bot.send_message')
+            self.info_prompt('TRY_CLEANUP', 'send_message')
             self.bot.send_message = self.bot.send_message.old
-            print(
-                '[CLEANUP:] -- Done. Reloading should have been successful '
-                'unless the lolz cog crashed without cleaning up')
-            print(
-                '[CLEANUP:] -- If that is the case, the bot may need to be '
-                'restarted')
+        if hasattr(self.bot.edit_message, 'old'):
+            self.info_prompt('TRY_CLEANUP', 'edit_message')
+            self.bot.edit_message = self.bot.edit_message.old
+        self.info_prompt('DONE', 'send_message')
+
+    def info_prompt(self, option, func_name):
+        if option == 'WARNING':
+            print('[WARNING:] -- Overwriting bot.{0} with send_lolz. '
+                  'If bot.{0} is not reloaded,'.format(func_name))
+            print('[WARNING:] -- in the event of a crash of the lolz '
+                  'cog, you may not be able revert to bot.{} '
+                  'without a restart/reloading lolz'.format(func_name))
+        elif option == 'TRY_CLEANUP':
+            print('[CLEANUP:] -- Trying to reload old bot.{}'.format(func_name))
+        else:
+            print('[CLEANUP:] -- Done. Reloading should have been successful '
+                  'unless the lolz cog crashed without cleaning up')
+            print('[CLEANUP:] -- If that is the case, the bot may need to be '
+                  'restarted')
+
+    async def on_message(self, message):
+        chan_or_id = message.channel or message.author.id
+
+        if self.bot.user.bot:
+            return
+        if self.bot.user != message.author:
+            return
+        if not self.can_lolz(chan_or_id):
+            return
+        if message.content.startswith(LOLZ_PREFIX):
+            return
+
+        embed = message.embeds[0] if len(message.embeds) else None
+
+        await self.bot.edit_message(message,
+                                    new_content=message.content,
+                                    embed=embed)
 
 
 def check_mod(ctx):
