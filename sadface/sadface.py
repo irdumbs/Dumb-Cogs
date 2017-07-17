@@ -30,7 +30,7 @@ class Sadface:
         else:
             self.servers[server.id] = not self.servers[server.id]
         #for a toggle, settings should save here in case bot fails to send message
-        dataIO.save_json("data/sadface/servers.json", "save", self.servers)
+        dataIO.save_json("data/sadface/servers.json", self.servers)
         if self.servers[server.id]:
             await self.bot.say("Sadface on. Please turn this off in the Red - DiscordBot server. This is only an example cog.")
         else:
