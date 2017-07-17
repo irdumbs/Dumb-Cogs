@@ -3,7 +3,7 @@ from discord.ext import commands
 from random import randint
 import datetime
 import os
-from .utils.dataIO import fileIO, dataIO
+from .utils.dataIO import dataIO
 from .utils import checks
 from __main__ import send_cmd_help
 from copy import deepcopy
@@ -26,7 +26,7 @@ class Economytrickle:
 
     def __init__(self, bot):
         self.bot = bot
-        self.settings = fileIO("data/economytrickle/settings.json", "load")
+        self.settings = dataIO.load_json("data/economytrickle/settings.json")
         self.activeUsers = {}
         self.currentUser = {}
         self.tricklePot = {}
@@ -175,7 +175,7 @@ class Economytrickle:
             else:
                 await self.bot.say("I will stop getting currency "
                                    "trickled to me.")
-            fileIO("data/economytrickle/settings.json", "save", self.settings)
+            dataIO.save_json("data/economytrickle/settings.json", self.settings)
         else:
             await self.bot.say("I do not have an account registered with the "
                                "`Economy cog`. If you want currency to trickle"
@@ -194,7 +194,7 @@ class Economytrickle:
         self.settings[sid]["ACTIVE_TIMEOUT"] = minutes
         await self.bot.say("Active user timeout is now: " +
                            str(self.settings[sid]["ACTIVE_TIMEOUT"]))
-        fileIO("data/economytrickle/settings.json", "save", self.settings)
+        dataIO.save_json("data/economytrickle/settings.json", self.settings)
 
     @trickleset.command(name="interval", pass_context=True)
     async def interval(self, ctx, minutes: float):
@@ -207,7 +207,7 @@ class Economytrickle:
         self.settings[sid]["PAYOUT_INTERVAL"] = minutes
         await self.bot.say("Payout interval is now: " +
                            str(self.settings[sid]["PAYOUT_INTERVAL"]))
-        fileIO("data/economytrickle/settings.json", "save", self.settings)
+        dataIO.save_json("data/economytrickle/settings.json", self.settings)
 
     @trickleset.command(name="multiplier", pass_context=True)
     async def multiplier(self, ctx, amt: float):
@@ -222,7 +222,7 @@ class Economytrickle:
         self.settings[sid]["PAYOUT_PER_ACTIVE"] = amt
         await self.bot.say("Base payout per active user is now: " +
                            str(self.settings[sid]["PAYOUT_PER_ACTIVE"]))
-        fileIO("data/economytrickle/settings.json", "save", self.settings)
+        dataIO.save_json("data/economytrickle/settings.json", self.settings)
 
     @trickleset.command(name="bonus", pass_context=True)
     async def activebonus(self, ctx, amt: int):
@@ -239,7 +239,7 @@ class Economytrickle:
         self.settings[sid]["NEW_ACTIVE_BONUS"] = amt
         await self.bot.say("Bonus per new active user is now: " +
                            str(self.settings[sid]["NEW_ACTIVE_BONUS"]))
-        fileIO("data/economytrickle/settings.json", "save", self.settings)
+        dataIO.save_json("data/economytrickle/settings.json", self.settings)
 
     @trickleset.command(name="leak", pass_context=True)
     async def bonusdeflate(self, ctx, amt: int):
@@ -256,7 +256,7 @@ class Economytrickle:
         self.settings[sid]["ACTIVE_BONUS_DEFLATE"] = amt
         await self.bot.say("Bonus pot leak is now: " +
                            str(self.settings[sid]["ACTIVE_BONUS_DEFLATE"]))
-        fileIO("data/economytrickle/settings.json", "save", self.settings)
+        dataIO.save_json("data/economytrickle/settings.json", self.settings)
 
     @trickleset.command(name="chance", pass_context=True)
     async def succeedchance(self, ctx, percentage: int):
@@ -273,7 +273,7 @@ class Economytrickle:
         self.settings[sid]["CHANCE_TO_PAYOUT"] = percentage
         await self.bot.say("Successful trickle chance is now: " +
                            str(self.settings[sid]["CHANCE_TO_PAYOUT"]))
-        fileIO("data/economytrickle/settings.json", "save", self.settings)
+        dataIO.save_json("data/economytrickle/settings.json", self.settings)
 
     # if Economy.py updates, this may break
     @commands.command(pass_context=True, no_pm=True)
@@ -319,7 +319,7 @@ class Economytrickle:
         sid = message.server.id
         if sid not in self.settings:
             self.settings[sid] = deepcopy(DEFAULT_SETTINGS)
-            fileIO("data/economytrickle/settings.json", "save", self.settings)
+            dataIO.save_json("data/economytrickle/settings.json", self.settings)
 
         toggle = self.settings[sid]['TOGGLE']
         if not toggle:
@@ -419,9 +419,9 @@ def check_files():
     serverSettings = {}
 
     f = "data/economytrickle/settings.json"
-    if not fileIO(f, "check"):
+    if not dataIO.is_valid_json(f):
         print("Creating empty economytrickle's settings.json...")
-        fileIO(f, "save", serverSettings)
+        dataIO.save_json(f, serverSettings)
 
     settings = dataIO.load_json(f)
     dirty = False
