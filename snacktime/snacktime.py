@@ -12,11 +12,166 @@ from .utils.dataIO import fileIO, dataIO
 from .utils import checks
 
 
-DEFAULT_SETTINGS = {"FRIENDS": False, "EVENT_START_DELAY": 1800, "EVENT_START_DELAY_VARIANCE": 900, "SNACK_DURATION": 240, "SNACK_DURATION_VARIANCE": 120, "MSGS_BEFORE_EVENT": 8, "SNACK_AMOUNT": 200}
+CUSTOM_DIR = "data/snacktime/custom_messages"
+
+DEFAULT_FRIENDS = [
+    "Pancakes",
+    "Mr Pickles",
+    "Satin",
+    "Thunky",
+    "Jingle",
+    "FluffButt",
+    "Urahorse",
+    "Staplefoot"
+]
+
+PHRASE_FILES = {
+    "SNACKTIME":   "start.txt",
+    "OUT":         "stop.txt",
+    "LONELY":      "lonely.txt",
+    "NO_TAKERS":   "no_takers.txt",
+    "GIVE":        "give.txt",
+    "LAST_SECOND": "last_second.txt",
+    "GREEDY":      "greedy.txt",
+    "NO_BANK":     "no_bank.txt",
+    "ENABLE":      "enable.txt",
+    "DISABLE":     "disable.txt"
+}
+
+SNACKBURR_PHRASES = {
+    "SNACKTIME": [
+        "`ʕ •ᴥ•ʔ < It's snack time!`",
+        "`ʕ •ᴥ•ʔ < I'm back with s'more snacks! Who wants!?`",
+        "`ʕ •ᴥ•ʔ < I'm back errbody! Who wants some snacks!?`",
+        "`ʕ •ᴥ•ʔ < Woo man those errands are crazy! Anyways, anybody want some snacks?`",
+        "`ʕ •ᴥ•ʔ < I got snacks! If nobody wants em, I'm gonna eat em all!!`",
+        "`ʕ •ᴥ•ʔ < Hey, I'm back! Anybody in the mood for some snacks?!`",
+        "`ʕ •ᴥ•ʔ < Heyyaaayayyyaya! I say Hey, I got snacks!`",
+        "`ʕ •ᴥ•ʔ < Heyyaaayayyyaya! I say Hey, What's goin on?... I uh.. I got snacks.`",
+        "`ʕ •ᴥ•ʔ < If anybody has reason why these snacks and my belly should not be wed, speak now or forever hold your peace!`",
+        "`ʕ •ᴥ•ʔ < Got another snack delivery guys!`",
+        "`ʕ •ᴥ•ʔ < Did somebody say snacks?!?! o/`",
+        "`ʕ •ᴥ•ʔ < Choo Choo! it's the pb train! Come on over guys!`",
+        "`ʕ •ᴥ•ʔ < Snacks are here! Dig in! Who wants a plate?`",
+        "`ʕ >ᴥ>ʔ < Pstt.. I got the snacks you were lookin for. <.<`",
+        "`ʕ •ᴥ•ʔ < I hope you guys are hungry! Cause i'm loaded to the brim with snacks!!!`",
+        "`ʕ •ᴥ•ʔ < I was hungry on the way over so I kinda started without you guys :3 Who wants snacks!?!`",
+        "`ʕ •ᴥ•ʔ < Beep beep! I got a snack delivery comin in! Who wants snacks!`",
+        "`ʕ •ᴥ•ʔ < Guess what time it is?! It's snacktime!! Who wants?!`",
+        "`ʕ •ᴥ•ʔ < Hey check out this sweet stach o' snacks I found! Who wants a cut?`",
+        "`ʕ •ᴥ•ʔ < Who's ready to gobble down some snacks!?`",
+        "`ʕ •ᴥ•ʔ < So who's gonna help me eat all these snacks? :3`"
+    ],
+    "OUT": [
+        "`ʕ •ᴥ•ʔ < I'm out of snacks! I'll be back with more soon.`",
+        "`ʕ •ᴥ•ʔ < I'm out of snacks :( I'll be back soon with more!`",
+        "`ʕ •ᴥ•ʔ < Aight, I gotta head out! I'll be back with more, don worry :3`",
+        "`ʕ •ᴥ•ʔ < Alright, I gotta get back to my errands. I'll see you guys soon!`"
+    ],
+    "LONELY": [
+        "`ʕ •ᴥ•ʔ < I guess you guys don't like snacktimes.. I'll stop comin around.`"
+    ],
+    "NO_TAKERS": [
+        "`ʕ •ᴥ•ʔ < I guess nobody wants snacks... more for me!`",
+        "`ʕ •ᴥ•ʔ < Guess nobody's here.. I'll just head out then`",
+        "`ʕ •ᴥ•ʔ < I don't see anybody.. <.< ... >.> ... All the snacks for me!!`",
+        "`ʕ •ᴥ•ʔ < I guess nobody wants snacks huh.. Well, I'll come back later`",
+        "`ʕ •ᴥ•ʔ < I guess i'll just come back later..`"
+    ],
+    "GIVE": [
+        "`ʕ •ᴥ•ʔ < Here ya go, {0}, here's {1} pb!`",
+        "`ʕ •ᴥ•ʔ < Alright here ya go, {0}, {1} pb for you!`",
+        "`ʕ •ᴥ•ʔ < Yeah! Here you go, {0}! {1} pb!`",
+        "`ʕ •ᴥ•ʔ < Of course {0}! Here's {1} pb!`",
+        "`ʕ •ᴥ•ʔ < Ok {0}, here's {1} pb for you. Anyone else want some?`",
+        "`ʕ •ᴥ•ʔ < Alllright, {1} pb for {0}!`",
+        "`ʕ •ᴥ•ʔ < Hold your horses {0}! Alright, {1} pb for you :)`"
+    ],
+    "LAST_SECOND": [
+        "`ʕ •ᴥ•ʔ < Fine fine, {0}, I'll give you {1} of my on-the-road pb.. Cya!`",
+        "`ʕ •ᴥ•ʔ < Oh! {0}, you caught me right before I left! Alright, i'll give you {1} of my own pb`"
+    ],
+    "GREEDY": [
+        "`ʕ •ᴥ•ʔ < Don't be greedy now! you already got some pb {0}!`",
+        "`ʕ •ᴥ•ʔ < You already got your snacks {0}!`",
+        "`ʕ •ᴥ•ʔ < Come on {0}, you already got your snacks! We gotta make sure there's some for errbody!`"
+    ],
+    "NO_BANK": [
+        "`ʕ •ᴥ•ʔ < You don't have a pb bank account, {0}! But here ya go, you can just eat these {1} pb jars!`",
+        "`ʕ •ᴥ•ʔ < Dang, {0}! You don't have a pb bank account. Are you just gonna eat these {1} pb jars?!`",
+        "`ʕ •ᴥ•ʔ < {0}, you don't really have a place to put these {1} pb jars, but I'll give em to you to eat here n now :)`"
+    ],
+    "ENABLE": [
+        "`ʕ •ᴥ•ʔ < Oh you guys want snacks?! Aight, I'll come around every so often to hand some out!`"
+    ],
+    "DISABLE": [
+        "`ʕ •ᴥ•ʔ < You guys don't want snacks anymore? Alright, I'll stop comin around.`"
+    ]
+}
+
+
+DEFAULT_SETTINGS = {"FRIENDS": False, "EVENT_START_DELAY": 1800,
+                    "EVENT_START_DELAY_VARIANCE": 900, "SNACK_DURATION": 240,
+                    "SNACK_DURATION_VARIANCE": 120, "MSGS_BEFORE_EVENT": 8,
+                    "SNACK_AMOUNT": 200}
+
+
+def persist_snackburr():
+    for phrase_type, lines in SNACKBURR_PHRASES.items():
+        fname = PHRASE_FILES[phrase_type]
+        fpath = os.path.join(CUSTOM_DIR, 'snackburr', fname)
+        with open(fpath, 'w') as f:
+            f.write('\n'.join(lines))
+
+
+def ensure_friend_file_structure():
+    for friend_name in os.listdir(CUSTOM_DIR):
+        if friend_name == 'snackburr':
+            continue
+        friend_path = os.path.join(CUSTOM_DIR, friend_name)
+        for phrase_file in PHRASE_FILES.values():
+            phrase_path = os.path.join(friend_path, phrase_file)
+            if not os.path.exists(phrase_path):
+                open(phrase_path, 'a').close()
+
+
+def load_customs():
+    """
+    {
+        "Pancakes": {
+            "SNACKTIME": ['a', 'b', 'c'],
+            "OUT"...
+        }
+    }
+    """
+    ensure_friend_file_structure()
+    customs = {name: {}
+               for name in os.listdir(CUSTOM_DIR)
+               if name != 'snackburr'}
+    for friend_name in customs.copy():  # go through all friend dirs
+        # TODO: see why it complains about size of customs changing
+        #       during iteration
+        friend_path = os.path.join(CUSTOM_DIR, friend_name)
+
+        # each phrase file
+        for phrase_group, phrase_file in PHRASE_FILES.items():
+            phrase_path = os.path.join(friend_path, phrase_file)
+
+            with open(phrase_path) as f:
+                li = [line.strip() for line in f if line.strip()]
+                if not li:  # if a phrase file doesn't exist, remove friend
+                    del customs[friend_name]
+                    break
+                customs[friend_name][phrase_group] = li
+    return customs
 
 
 class Snacktime:
-    """The Snackburr's passing out pb jars!"""
+    """The Snackburr's passing out pb jars!
+
+    Snackburr has some friends now! Invite them to the party by
+    adding messages to the files in data/snacktime/custom_messages!
+    """
 
     def __init__(self,bot):
         self.bot = bot
@@ -39,65 +194,8 @@ class Snacktime:
         self.repeatMissedSnacktimes = fileIO("data/snacktime/repeatMissedSnacktimes.json", "load")
         self.channels = fileIO("data/snacktime/channels.json", "load")
         self.settings = fileIO("data/snacktime/settings.json", "load")
-        self.startPhrases = [
-            "`ʕ •ᴥ•ʔ < It's snack time!`",
-            "`ʕ •ᴥ•ʔ < I'm back with s'more snacks! Who wants!?`",
-            "`ʕ •ᴥ•ʔ < I'm back errbody! Who wants some snacks!?`",
-            "`ʕ •ᴥ•ʔ < Woo man those errands are crazy! Anyways, anybody want some snacks?`",
-            "`ʕ •ᴥ•ʔ < I got snacks! If nobody wants em, I'm gonna eat em all!!`",
-            "`ʕ •ᴥ•ʔ < Hey, I'm back! Anybody in the mood for some snacks?!`",
-            "`ʕ •ᴥ•ʔ < Heyyaaayayyyaya! I say Hey, I got snacks!`",
-            "`ʕ •ᴥ•ʔ < Heyyaaayayyyaya! I say Hey, What's goin on?... I uh.. I got snacks.`",
-            "`ʕ •ᴥ•ʔ < If anybody has reason why these snacks and my belly should not be wed, speak now or forever hold your peace!`",
-            "`ʕ •ᴥ•ʔ < Got another snack delivery guys!`",
-            "`ʕ •ᴥ•ʔ < Did somebody say snacks?!?! o/`",
-            "`ʕ •ᴥ•ʔ < Choo Choo! it's the pb train! Come on over guys!`",
-            "`ʕ •ᴥ•ʔ < Snacks are here! Dig in! Who wants a plate?`",
-            "`ʕ >ᴥ>ʔ < Pstt.. I got the snacks you were lookin for. <.<`",
-            "`ʕ •ᴥ•ʔ < I hope you guys are hungry! Cause i'm loaded to the brim with snacks!!!`",
-            "`ʕ •ᴥ•ʔ < I was hungry on the way over so I kinda started without you guys :3 Who wants snacks!?!`",
-            "`ʕ •ᴥ•ʔ < Beep beep! I got a snack delivery comin in! Who wants snacks!`",
-            "`ʕ •ᴥ•ʔ < Guess what time it is?! It's snacktime!! Who wants?!`",
-            "`ʕ •ᴥ•ʔ < Hey check out this sweet stach o' snacks I found! Who wants a cut?`",
-            "`ʕ •ᴥ•ʔ < Who's ready to gobble down some snacks!?`",
-            "`ʕ •ᴥ•ʔ < So who's gonna help me eat all these snacks? :3`"
-        ]
-        self.outPhrases = [
-            "`ʕ •ᴥ•ʔ < I'm out of snacks! I'll be back with more soon.`",
-            "`ʕ •ᴥ•ʔ < I'm out of snacks :( I'll be back soon with more!`",
-            "`ʕ •ᴥ•ʔ < Aight, I gotta head out! I'll be back with more, don worry :3`",
-            "`ʕ •ᴥ•ʔ < Alright, I gotta get back to my errands. I'll see you guys soon!`"
-        ]
-        self.notakersPhrases = [
-            "`ʕ •ᴥ•ʔ < I guess nobody wants snacks... more for me!`",
-            "`ʕ •ᴥ•ʔ < Guess nobody's here.. I'll just head out then`",
-            "`ʕ •ᴥ•ʔ < I don't see anybody.. <.< ... >.> ... All the snacks for me!!`",
-            "`ʕ •ᴥ•ʔ < I guess nobody wants snacks huh.. Well, I'll come back later`",
-            "`ʕ •ᴥ•ʔ < I guess i'll just come back later..`"
-        ]
-        self.givePhrases = [
-            "`ʕ •ᴥ•ʔ < Here ya go, {0}, here's {1} pb!`",
-            "`ʕ •ᴥ•ʔ < Alright here ya go, {0}, {1} pb for you!`",
-            "`ʕ •ᴥ•ʔ < Yeah! Here you go, {0}! {1} pb!`",
-            "`ʕ •ᴥ•ʔ < Of course {0}! Here's {1} pb!`",
-            "`ʕ •ᴥ•ʔ < Ok {0}, here's {1} pb for you. Anyone else want some?`",
-            "`ʕ •ᴥ•ʔ < Alllright, {1} pb for {0}!`",
-            "`ʕ •ᴥ•ʔ < Hold your horses {0}! Alright, {1} pb for you :)`"
-        ]
-        self.lastsecondPhrases = [
-            "`ʕ •ᴥ•ʔ < Fine fine, {0}, I'll give you {1} of my on-the-road pb.. Cya!`",
-            "`ʕ •ᴥ•ʔ < Oh! {0}, you caught me right before I left! Alright, i'll give you {1} of my own pb`"
-        ]
-        self.greedyPhrases = [
-            "`ʕ •ᴥ•ʔ < Don't be greedy now! you already got some pb {0}!`",
-            "`ʕ •ᴥ•ʔ < You already got your snacks {0}!`",
-            "`ʕ •ᴥ•ʔ < Come on {0}, you already got your snacks! We gotta make sure there's some for errbody!`"
-        ]
-        self.nobankPhrases = [
-            "`ʕ •ᴥ•ʔ < You don't have a pb bank account, {0}! But here ya go, you can just eat these {1} pb jars!`",
-            "`ʕ •ᴥ•ʔ < Dang, {0}! You don't have a pb bank account. Are you just gonna eat these {1} pb jars?!`",
-            "`ʕ •ᴥ•ʔ < {0}, you don't really have a place to put these {1} pb jars, but I'll give em to you to eat here n now :)`"
-        ]
+        self.phrases = self.update_phrases()
+        self.channel_persona = {}
 
     #TODO:
     #   o - Make deliver channel-based instead of server
@@ -113,6 +211,27 @@ class Snacktime:
 
     async def ready_up(self):
         self.loop = asyncio.get_event_loop()
+
+    def persona_choice(self, msg):
+        scid = msg.server.id+"-"+msg.channel.id
+        invite_friends = self.settings[scid]["FRIENDS"]
+        personas = set(self.phrases)
+        if not invite_friends:
+            return "snackburr"
+        elif invite_friends is True:
+            personas.remove("snackburr")
+        return randchoice(personas)
+
+    async def get_response(self, msg, phrase_type):
+        scid = msg.server.id+"-"+msg.channel.id
+        persona = self.channel_persona[scid]
+        phrases = self.phrases[persona]
+        return randchoice(phrases[phrase_type])
+
+    def update_phrases(self):
+        phrases = load_customs()
+        phrases['snackburr'] = SNACKBURR_PHRASES
+        return phrases
 
     @commands.group(pass_context=True, no_pm=True)
     @checks.admin_or_permissions(manage_server=True)
@@ -204,6 +323,52 @@ class Snacktime:
             await self.bot.say("snackburr will now give out " + str(self.settings[scid]["SNACK_AMOUNT"]) + " pb max per person per snacktime.")
             fileIO("data/snacktime/settings.json", "save", self.settings)
 
+    @snackset.command(pass_context=True, name="friends")
+    async def snackset_friends(self, ctx, choice: int):
+        """snackburr's friends wanna know what all the hub-bub's about!
+
+        Do you want to
+        1: invite them to the party,
+        2: only allow snackburr to chillax with you guys, or
+        3: kick snackburr out on the curb in favor of his obviously cooler friends?
+
+        *Invite them to the party by adding friend folders
+        and messages to the files in data/snacktime/custom_messages/FRIEND_NAME!
+        There should alread be a blank friend folder there for you as an example.
+
+        Each line counts as a message
+
+        You can use {0} in last_second, give, no_bank, and greedy
+        to refer to the snacker
+        You can use {1} in last_second, give, and no_bank
+        to specify snack amount"""
+        server = ctx.message.server
+        channel = ctx.message.channel
+        author = ctx.message.author
+
+        self.customs = load_customs()
+        if choice not in (1, 2, 3) or not self.customs:
+            return await send_cmd_help(ctx)
+
+        scid = ctx.message.server.id+"-"+ctx.message.channel.id
+
+        # DONE: only use one persona per snacktime
+        # DONE: allow multiple custom personas by using subdirectories
+        # DONE: Write snackburr's text to file as an example
+
+        choices = {
+            1: ("both", "Everybody's invited!"),
+            2: (False, "You chose to not invite snackburr's friends"),
+            3: (True, "You kick snackburr out in favor of "
+                      "his friends! Ouch. Harsh..")
+        }
+        choice = choices[choice]
+
+        settings = self.settings[scid]
+        settings["FRIENDS"] = choice[0]
+        await self.bot.say(choice[1])
+        dataIO("data/snacktime/settings.json", self.settings)
+
     @snackset.command(pass_context=True)
     async def deliver(self, ctx):
         """Asks snackburr to start delivering to this channel"""
@@ -213,9 +378,9 @@ class Snacktime:
         self.channels[scid] = not self.channels[scid]
         fileIO("data/snacktime/channels.json", "save", self.channels)
         if self.channels[scid]:
-            await self.bot.say("`ʕ •ᴥ•ʔ < Oh you guys want snacks?! Aight, I'll come around every so often to hand some out!`")
+            await self.bot.say(self.get_response(ctx.message, "ENABLE"))
         else:
-            await self.bot.say("`ʕ •ᴥ•ʔ < You guys don't want snacks anymore? Alright, I'll stop comin around.`")
+            await self.bot.say(self.get_response(ctx.message, "DISABLE"))
 
     @commands.command(pass_context=True)
     async def snacktime(self, ctx):
@@ -245,7 +410,9 @@ class Snacktime:
         scid = message.server.id+"-"+message.channel.id
         if self.acceptInput.get(scid,False):
             return
-        await self.bot.send_message(message.channel, randchoice(self.startPhrases))
+        self.phrases = self.update_phrases()
+        self.channel_persona[scid] = self.persona_choice(message)
+        await self.bot.send_message(message.channel, self.get_response(message, "SNACKTIME"))
         #set econ here? don't need to unset it.
         self.econ = self.bot.get_cog('Economy')
         self.acceptInput[scid] = True
@@ -256,15 +423,15 @@ class Snacktime:
         try:
             #list isn't empty
             if self.alreadySnacked.get(scid,False):
-                await self.bot.send_message(message.channel, randchoice(self.outPhrases))
+                await self.bot.send_message(message.channel, self.get_response(message, "OUT"))
                 self.repeatMissedSnacktimes[scid] = 0
                 fileIO("data/snacktime/repeatMissedSnacktimes.json", "save", self.repeatMissedSnacktimes)
             else:
-                await self.bot.send_message(message.channel, randchoice(self.notakersPhrases))
+                await self.bot.send_message(message.channel, self.get_response(message, "NO_TAKERS"))
                 self.repeatMissedSnacktimes[scid] = self.repeatMissedSnacktimes.get(scid,0) + 1
                 await asyncio.sleep(2)
                 if self.repeatMissedSnacktimes[scid] > 9: #move to a setting
-                    await self.bot.send_message(message.channel, "`ʕ •ᴥ•ʔ < I guess you guys don't like snacktimes.. I'll stop comin around.`")
+                    await self.bot.send_message(message.channel, self.get_response(message, "LONELY"))
                     self.channels[scid] = False
                     fileIO("data/snacktime/channels.json", "save", self.channels)
                     self.repeatMissedSnacktimes[scid] = 0
@@ -367,15 +534,15 @@ class Snacktime:
                         if self.econ.bank.account_exists(message.author):
                             try:
                                 if self.acceptInput.get(scid,False):
-                                    await self.bot.send_message(message.channel, randchoice(self.givePhrases).format(message.author.name,snackAmt))
+                                    await self.bot.send_message(message.channel, self.get_response(message, "GIVE").format(message.author.name,snackAmt))
                                 else:
-                                    await self.bot.send_message(message.channel, randchoice(self.lastsecondPhrases).format(message.author.name,snackAmt))
+                                    await self.bot.send_message(message.channel, self.get_response(message, "LAST_SECOND").format(message.author.name,snackAmt))
                                 self.econ.bank.deposit_credits(message.author, snackAmt)
                             except:
                                 print("Failed to send message. " + message.author.name + " didn't get pb")
 
                         else:
-                            await self.bot.send_message(message.channel, randchoice(self.nobankPhrases).format(message.author.name,snackAmt))
+                            await self.bot.send_message(message.channel, self.get_response(message, "NO_BANK").format(message.author.name,snackAmt))
 
                 else:
                     more_phrases = ["more pl","i have some more","i want more","i have another","i have more","more snack"]
@@ -387,13 +554,24 @@ class Snacktime:
                     if userWants:
                         await asyncio.sleep(randint(1,6))
                         if self.acceptInput.get(scid,False):
-                            await self.bot.send_message(message.channel, randchoice(self.greedyPhrases).format(message.author.name))
+                            await self.bot.send_message(message.channel, self.get_response(message, "GREEDY").format(message.author.name))
 
 
 def check_folders():
     if not os.path.exists("data/snacktime"):
         print("Creating data/snacktime folder...")
         os.makedirs("data/snacktime")
+    if not os.path.exists(CUSTOM_DIR):
+        print("Creating {} folder...".format(CUSTOM_DIR))
+        os.makedirs(CUSTOM_DIR)
+    burrdir = os.path.join(CUSTOM_DIR, 'snackburr')
+    if not os.path.exists(burrdir):
+        print("Creating {} folder...".format(burrdir))
+        os.makedirs(burrdir)
+    if not os.listdir(CUSTOM_DIR):
+        friend_dir = os.path.join(CUSTOM_DIR, randchoice(DEFAULT_FRIENDS))
+        print("Creating {} folder... (a default friend)".format(friend_dir))
+        os.makedirs(friend_dir)
 
 
 def check_files():
@@ -412,6 +590,9 @@ def check_files():
     if not fileIO(f, "check"):
         print("Creating empty snacktime's repeatMissedSnacktimes.json...")
         fileIO(f, "save", {})
+
+    persist_snackburr()
+    ensure_friend_file_structure()
 
     settings = dataIO.load_json(f)
     dirty = False
