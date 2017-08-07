@@ -57,7 +57,7 @@ class Lolz:
         }
 
         self.cached = {}
-        self.settings = dataIO.load_jsonn"data/lolz/settings.json")
+        self.settings = dataIO.load_json("data/lolz/settings.json")
         self.tranzlashun = dataIO.load_json("data/lolz/tranzlashun.json")
 
         self._monkeymanager = self.bot.loop.create_task(self.patcher())
