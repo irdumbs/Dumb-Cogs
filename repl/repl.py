@@ -268,8 +268,9 @@ class REPL:
         # this is global now so might cause problems if other ppl
         # are instantiating their own REPLs (which they shouldn't be)
         self.reaction_remove_events = _reaction_remove_events
+        self.interactive_results = self.pagify_interactive_results
 
-        old_methods = ['interactive_results', 'display_page', 'remove_reactions',
+        old_methods = ['display_page', 'remove_reactions',
                        'wait_for_interaction', 'wait_for_reaction_remove']
         for m in old_methods:
             # don't do this at home kids
@@ -336,6 +337,10 @@ class REPL:
     def get_syntax_error(self, e):
         return '```py\n{0.text}{1:>{0.offset}}\n{2}: {0}```'.format(e, '^', type(e).__name__)
 
+    async def pagify_interactive_results(self, ctx, results, single_msg=True):
+        pages = self.page_results(results, single_msg)
+        return await interactive_results(self.bot, ctx, pages, single_msg=single_msg)
+
     async def print_results(self, ctx, results):
         msg = ctx.message
         nbs = '​'
@@ -343,9 +348,8 @@ class REPL:
         is_interactive = self.settings["OUTPUT_REDIRECT"] == "pages"
         res_len = len(discord_fmt.format(results))
         if is_interactive and res_len > self.settings["PAGES_LENGTH"]:
-            pages = self.page_results(results, not self.settings["MULTI_MSG_PAGING"])
-            page = interactive_results(self.bot, ctx, pages,
-                                       single_msg=not self.settings["MULTI_MSG_PAGING"])
+            single_msg = not self.settings["MULTI_MSG_PAGING"]
+            page = self.pagify_interactive_results(ctx, results, single_msg=single_msg)
             self.bot.loop.create_task(page)
         elif res_len > 2000:
             if self.settings["OUTPUT_REDIRECT"] == "pm":
