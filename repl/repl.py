@@ -326,7 +326,8 @@ class REPL:
         is_interactive = self.settings["OUTPUT_REDIRECT"] == "pages"
         res_len = len(discord_fmt.format(results))
         if is_interactive and res_len > self.settings["PAGES_LENGTH"]:
-            page = self.interactive_results(ctx, results,
+            pages = self.page_results(results, not self.settings["MULTI_MSG_PAGING"])
+            page = self.interactive_results(ctx, pages,
                                             single_msg=not self.settings["MULTI_MSG_PAGING"])
             self.bot.loop.create_task(page)
         elif res_len > 2000:
@@ -354,7 +355,28 @@ class REPL:
 
             await self.bot.send_message(msg.channel, discord_fmt.format(results))
 
-    async def interactive_results(self, ctx, results, single_msg=True):
+    def page_results(self, results, single_msg=True):
+        nbs = '​'
+        discord_fmt = nbs + '```py\n{}\n```'
+        prompt = ("  Output too long. Navigate pages with ({}close/next)"
+                  .format('' if single_msg else 'prev/'))
+
+        pages = [p for p in pagify(results, ['\n', ' '],
+                                   page_length=self.settings["PAGES_LENGTH"])]
+        # results is not a generator, so no reason to keep this as one
+        pages = [discord_fmt.format(p) + 'pg. {}/{}'
+                 .format(c + 1, len(pages))
+                 for c, p in enumerate(pages)]
+        pages[0] += prompt
+        return pages
+
+    async def interactive_results(self, ctx, pages, single_msg=True):
+        """pages can be non-empty list of any combination of 
+        strings, embeds, or (string, embed) tuples
+
+        single_msg is a boolean stating whether a msg should be 
+        edited in place or if a new msg should be sent for each page
+        """
         author = ctx.message.author
         channel = ctx.message.channel
 
@@ -366,26 +388,23 @@ class REPL:
             choices = OrderedDict((('❌', 'close'),
                                    ('🔽', 'next')))
 
-        nbs = '​'
-        discord_fmt = nbs + '```py\n{}\n```'
-        prompt = ("  Output too long. Navigate pages with ({})"
-                  .format('/'.join(choices.values())))
-
-        pages = [p for p in pagify(results, ['\n', ' '],
-                                   page_length=self.settings["PAGES_LENGTH"])]
-        # results is not a generator, so no reason to keep this as one
-        pages = [discord_fmt.format(p) + 'pg. {}/{}'
-                 .format(c + 1, len(pages))
-                 for c, p in enumerate(pages)]
-        pages[0] += prompt
-
         choice = 'next'
         page_num = 0
         dirs = {'next': 1, 'prev': -1}
         msgs = []
         while choice:
-            msg = await self.display_page(pages[page_num], channel, choices,
-                                          msgs, single_msg)
+            cur = pages[page_num]
+            txt = ''
+            kwargs = {}
+            if isinstance(cur, discord.Embed):
+                kwargs['embed'] = cur
+            elif isinstance(cur, tuple):
+                txt = cur[0]
+                kwargs['embed'] = cur[1]
+            else:
+                txt = cur
+            msg = await self.display_page(txt, channel, choices,
+                                          msgs, single_msg, **kwargs)
             choice = await self.wait_for_interaction(msg, author, choices)
             if choice == 'close':
                 try:
@@ -409,13 +428,23 @@ class REPL:
                                    for r in msg.reactions if r.me),
                                  return_exceptions=True)
 
-    async def display_page(self, page, channel, emojis, msgs, overwrite_prev):
+    async def display_page(self, page, channel, emojis, msgs, overwrite_prev, *, embed=None):
+        kwargs = {}
         if msgs and overwrite_prev:
             msg = msgs.pop()
-            embed = msg.embeds[0] if len(msg.embeds) else None
-            msg = await self.bot.edit_message(msg, new_content=page, embed=embed)
+            # TODO: might have to re-get msg to update embed
+            embed = embed or (msg.embeds[0] if len(msg.embeds) else None)
+            if page:
+                kwargs['new_content'] = page
+            if embed:
+                kwargs['embed'] = embed
+            msg = await self.bot.edit_message(msg, **kwargs)
         else:
-            send_msg = self.bot.send_message(channel, page)
+            if page:
+                kwargs['content'] = page
+            if embed:
+                kwargs['embed'] = embed
+            send_msg = self.bot.send_message(channel, **kwargs)
             if msgs:
                 # refresh msg
                 prv_msg = await self.bot.get_message(channel, msgs[len(msgs) - 1].id)
