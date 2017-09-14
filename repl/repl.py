@@ -59,6 +59,9 @@ def __getattr__(self, attr):
 """
 
 
+_reaction_remove_events = {}
+
+
 class ReactionRemoveEvent(asyncio.Event):
     def __init__(self, emojis, author):
         super().__init__()
@@ -70,7 +73,6 @@ class ReactionRemoveEvent(asyncio.Event):
         self.reaction = reaction
         return super().set()
 
-_reaction_remove_events = {}
 
 def irdir(*args, re_exclude=None, re_search=None):
     """Dir([object[,re_exclude[,re_search]]]) --> Dir[list of attributes]
