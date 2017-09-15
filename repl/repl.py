@@ -677,6 +677,9 @@ class REPL:
 async def interactive_results(bot, ctx, pages, single_msg=True):
     """pages can be non-empty list of any combination of 
     strings, embeds, or (string, embed) tuples
+    or a coroutine that returns those
+    if a coroutine is found, it will be awaited and its 
+    place in the list will be replaced with the results
 
     single_msg is a boolean stating whether a msg should be 
     edited in place or if a new msg should be sent for each page
@@ -697,6 +700,8 @@ async def interactive_results(bot, ctx, pages, single_msg=True):
     dirs = {'next': 1, 'prev': -1}
     msgs = []
     while choice:
+        if inspect.isawaitable(pages[page_num]):
+            pages[page_num] = await pages[page_num]
         cur = pages[page_num]
         txt = ''
         kwargs = {}
