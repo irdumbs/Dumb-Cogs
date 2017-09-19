@@ -674,7 +674,7 @@ class REPL:
             reaction.emoji in event.emojis):
             event.set(reaction)
 
-async def interactive_results(bot, ctx, pages, single_msg=True):
+async def interactive_results(bot, ctx, pages, single_msg=True, timeout=120):
     """pages can be non-empty list of any combination of 
     strings*, embeds, or (string, embed) tuples
     or a coroutine that returns those
@@ -717,7 +717,8 @@ async def interactive_results(bot, ctx, pages, single_msg=True):
             txt = cur
         msg = await display_page(bot, txt, channel, choices,
                                  msgs, single_msg, **kwargs)
-        choice = await wait_for_interaction(bot, msg, author, choices)
+        choice = await wait_for_interaction(bot, msg, author, choices,
+                                            timeout=timeout)
         if choice == 'close':
             try:
                 await bot.delete_messages(msgs)
