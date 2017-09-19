@@ -676,13 +676,16 @@ class REPL:
 
 async def interactive_results(bot, ctx, pages, single_msg=True):
     """pages can be non-empty list of any combination of 
-    strings, embeds, or (string, embed) tuples
+    strings*, embeds, or (string, embed) tuples
     or a coroutine that returns those
     if a coroutine is found, it will be awaited and its 
     place in the list will be replaced with the results
 
     single_msg is a boolean stating whether a msg should be 
     edited in place or if a new msg should be sent for each page
+
+    * note, if an embed has alread been added and single_msg is True
+    there doesn't seem to be a way to remove the embed
     """
     author = ctx.message.author
     channel = ctx.message.channel
@@ -728,21 +731,15 @@ async def interactive_results(bot, ctx, pages, single_msg=True):
         await remove_reactions(bot, msgs.pop())
 
 async def display_page(bot, page, channel, emojis, msgs, overwrite_prev, *, embed=None):
-    kwargs = {}
+    kwargs = {'embed': embed}
     if msgs and overwrite_prev:
         msg = msgs.pop()
-        # TODO: might have to re-get msg to update embed
-        embed = embed or (msg.embeds[0] if len(msg.embeds) else None)
-        if page:
-            kwargs['new_content'] = page
-        if embed:
-            kwargs['embed'] = embed
+        if not page:  # fix bug where edit new_content='' doesn't edit
+            page = ' '
+        kwargs['new_content'] = page
         msg = await bot.edit_message(msg, **kwargs)
     else:
-        if page:
-            kwargs['content'] = page
-        if embed:
-            kwargs['embed'] = embed
+        kwargs['content'] = page
         send_msg = bot.send_message(channel, **kwargs)
         if msgs:
             # refresh msg
