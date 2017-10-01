@@ -345,17 +345,24 @@ class Economytrickle:
                 message.channel.id not in self.settings[sid]['CHANNELS']):
             return
         current_user = self.currentUser.get(sid, None)
-        if ((self.settings[sid]["TRICKLE_BOT"] or
-             message.author.id != self.bot.user.id) and
-                current_user != message.author.id):
+        diff_user = current_user != message.author.id
+        is_self = message.author.id == self.bot.user.id
+        is_bot = message.author.bot 
+        self_can = self.settings[sid]["TRICKLE_BOT"]
+        if (((not is_bot) or (is_self and self_can)) and diff_user):
             # print("----Trickle----")
             # add user or update timestamp and make him current user
-            self.currentUser[sid] = message.author.id
+            if not is_self:  # don't allow self to be the current user
+                self.currentUser[sid] = message.author.id
+            if not self.currentUser.get(sid, None):
+                return
+
             now = datetime.datetime.now()
             # new active user bonus
             # if server has a list yet
             active_users = self.activeUsers.get(sid, None)
             if sid in self.activeUsers.keys():
+                # self.bot doesn't add to active bonus
                 if self.currentUser[sid] not in active_users.keys():
                     # might be redundant
                     # if self.tricklePot.get(sid,None) is None:
@@ -367,7 +374,7 @@ class Economytrickle:
                 self.activeUsers[sid] = {}
                 self.tricklePot[sid] = 0
             # timestamp is UTC time, not my time
-            self.activeUsers[sid][self.currentUser[sid]] = now
+            self.activeUsers[sid][message.author.id] = now
 
             payout_interval = self.settings[sid]["PAYOUT_INTERVAL"]
             threshold = (now - datetime.timedelta(minutes=payout_interval))
