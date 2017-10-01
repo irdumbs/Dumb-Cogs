@@ -242,8 +242,8 @@ class Economytrickle:
                            str(self.settings[sid]["NEW_ACTIVE_BONUS"]))
         dataIO.save_json("data/economytrickle/settings.json", self.settings)
 
-    @trickleset.command(name="bonus", pass_context=True)
-    async def activebonus(self, ctx, amt: int):
+    @trickleset.command(name="base", pass_context=True)
+    async def activebase(self, ctx, amt: int):
         """Sets the base amount to give to every active user.
 
         Every trickle, active users will get *at least* this amount
