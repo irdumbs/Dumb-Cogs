@@ -11,6 +11,7 @@ from copy import deepcopy
 
 DEFAULT_SETTINGS = {"TRICKLE_BOT": False, "NEW_ACTIVE_BONUS": 1,
                     "ACTIVE_BONUS_DEFLATE": 1, "PAYOUT_INTERVAL": 2,
+                    "BASE_PAYOUT": 0,
                     "CHANCE_TO_PAYOUT": 50, "PAYOUT_PER_ACTIVE": 1,
                     "ACTIVE_TIMEOUT": 10, "TOGGLE": False, "CHANNELS": []}
 
@@ -37,7 +38,7 @@ class Economytrickle:
     async def trickleset(self, ctx):
         """Changes economy trickle settings
         Trickle amount:
-            (# active users - 1) x multiplier + bonus pot
+            base amount + (# active users - 1) x multiplier + bonus pot
         Every active user gets the trickle amount. 
         It is not distributed between active users.
         """
@@ -241,6 +242,22 @@ class Economytrickle:
                            str(self.settings[sid]["NEW_ACTIVE_BONUS"]))
         dataIO.save_json("data/economytrickle/settings.json", self.settings)
 
+    @trickleset.command(name="bonus", pass_context=True)
+    async def activebonus(self, ctx, amt: int):
+        """Sets the base amount to give to every active user.
+
+        Every trickle, active users will get *at least* this amount
+        """
+        sid = ctx.message.server.id
+        if amt < 0:
+            await self.bot.say("```Warning: Base amount should be positive "
+                               "unless you want to discourage conversations"
+                               "```")
+        self.settings[sid]["BASE_PAYOUT"] = amt
+        await self.bot.say("Base amount for active users is now: " +
+                           str(self.settings[sid]["BASE_PAYOUT"]))
+        dataIO.save_json("data/economytrickle/settings.json", self.settings)
+
     @trickleset.command(name="leak", pass_context=True)
     async def bonusdeflate(self, ctx, amt: int):
         """Sets the bonus pot leak amount.
@@ -367,7 +384,8 @@ class Economytrickle:
                     # don't want bot to add to payout
                     if self.bot.user.id in self.activeUsers[sid]:
                         numActive -= 1
-                    trickleAmt = int((numActive - 1) *
+                    trickleAmt = int(self.settings[sid]["BASE_PAYOUT"] +
+                                     (numActive - 1) *
                                      self.settings[sid]["PAYOUT_PER_ACTIVE"] +
                                      self.tricklePot[sid])
                 # debug
