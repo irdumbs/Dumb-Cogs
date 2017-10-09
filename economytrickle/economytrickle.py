@@ -164,6 +164,7 @@ class Economytrickle:
         dataIO.save_json("data/economytrickle/settings.json", self.settings)
 
     @trickleset.command(name="bot", pass_context=True)
+    @checks.is_owner()
     async def tricklebot(self, ctx):
         """Enables/disables trickling economy to the bot"""
         sid = ctx.message.server.id
