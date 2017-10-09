@@ -398,11 +398,6 @@ def check_folders():
 
 def check_files():
 
-    f = "data/snacktime/settings.json"
-    if not dataIO.is_valid_json(f):
-        print("Creating empty snacktime's settings.json...")
-        dataIO.save_json(f, {})
-
     f = "data/snacktime/channels.json"
     if not dataIO.is_valid_json(f):
         print("Creating empty snacktime's channels.json...")
@@ -411,6 +406,11 @@ def check_files():
     f = "data/snacktime/repeatMissedSnacktimes.json"
     if not dataIO.is_valid_json(f):
         print("Creating empty snacktime's repeatMissedSnacktimes.json...")
+        dataIO.save_json(f, {})
+
+    f = "data/snacktime/settings.json"
+    if not dataIO.is_valid_json(f):
+        print("Creating empty snacktime's settings.json...")
         dataIO.save_json(f, {})
 
     settings = dataIO.load_json(f)

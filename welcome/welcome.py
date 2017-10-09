@@ -1,11 +1,12 @@
 import discord
 from discord.ext import commands
-from .utils.dataIO import fileIO
+from .utils.dataIO import dataIO
 from .utils import checks
 from .utils.chat_formatting import pagify
 from __main__ import send_cmd_help
 from copy import deepcopy
 import os
+import asyncio
 from random import choice as rand_choice
 
 
@@ -21,7 +22,7 @@ class Welcome:
 
     def __init__(self, bot):
         self.bot = bot
-        self.settings = fileIO(settings_path, "load")
+        self.settings = dataIO.load_json(settings_path)
 
     @commands.group(pass_context=True, no_pm=True)
     @checks.admin_or_permissions(manage_server=True)
@@ -31,7 +32,7 @@ class Welcome:
         if server.id not in self.settings:
             self.settings[server.id] = deepcopy(default_settings)
             self.settings[server.id]["CHANNEL"] = server.default_channel.id
-            fileIO(settings_path, "save", self.settings)
+            dataIO.save_json(settings_path, self.settings)
         if ctx.invoked_subcommand is None:
             await send_cmd_help(ctx)
             msg = "```"
@@ -68,7 +69,7 @@ class Welcome:
             Someone new joined! Who is it?! D: IS HE HERE TO HURT US?!"""
         server = ctx.message.server
         self.settings[server.id]["GREETING"].append(format_msg)
-        fileIO(settings_path, "save", self.settings)
+        dataIO.save_json(settings_path, self.settings)
         await self.bot.say("Welcome message added for the server.")
         await self.send_testing_msg(ctx, msg=format_msg)
 
@@ -92,7 +93,7 @@ class Welcome:
             return
         if not self.settings[server.id]["GREETING"]:
             self.settings[server.id]["GREETING"] = [default_greeting]
-        fileIO(settings_path, "save", self.settings)
+        dataIO.save_json(settings_path, self.settings)
         await self.bot.say("**This message was deleted:**\n{}".format(choice))
 
     @welcomeset_msg.command(pass_context=True, name="list", no_pm=True)
@@ -116,7 +117,7 @@ class Welcome:
             await self.send_testing_msg(ctx)
         else:
             await self.bot.say("I will no longer welcome new users.")
-        fileIO(settings_path, "save", self.settings)
+        dataIO.save_json(settings_path, self.settings)
 
     @welcomeset.command(pass_context=True)
     async def channel(self, ctx, channel : discord.Channel=None):
@@ -132,7 +133,7 @@ class Welcome:
                                "messages to {0.mention}".format(channel))
             return
         self.settings[server.id]["CHANNEL"] = channel.id
-        fileIO(settings_path, "save", self.settings)
+        dataIO.save_json(settings_path, self.settings)
         channel = self.get_welcome_channel(server)
         await self.bot.send_message(channel, "I will now send welcome "
                                     "messages to {0.mention}".format(channel))
@@ -153,7 +154,7 @@ class Welcome:
         Leave blank to reset to regular user welcome"""
         server = ctx.message.server
         self.settings[server.id]["BOTS_MSG"] = format_msg
-        fileIO(settings_path, "save", self.settings)
+        dataIO.save_json(settings_path, self.settings)
         if format_msg is None:
             await self.bot.say("Bot message reset. Bots will now be welcomed as regular users.")
         else:
@@ -168,7 +169,7 @@ class Welcome:
         Leave blank to not give them a role."""
         server = ctx.message.server
         self.settings[server.id]["BOTS_ROLE"] = role.name if role else role
-        fileIO(settings_path, "save", self.settings)
+        dataIO.save_json(settings_path, self.settings)
         await self.bot.say("Bots that join this server will "
                            "now be put into the {} role".format(role.name))
 
@@ -192,7 +193,7 @@ class Welcome:
             return
         else:
             self.settings[server.id]["WHISPER"] = options[choice.lower()]
-        fileIO(settings_path, "save", self.settings)
+        dataIO.save_json(settings_path, self.settings)
         channel = self.get_welcome_channel(server)
         if not self.settings[server.id]["WHISPER"]:
             await self.bot.say("I will no longer send DMs to new users")
@@ -211,7 +212,7 @@ class Welcome:
         if server.id not in self.settings:
             self.settings[server.id] = deepcopy(default_settings)
             self.settings[server.id]["CHANNEL"] = server.default_channel.id
-            fileIO(settings_path, "save", self.settings)
+            dataIO.save_json(settings_path, self.settings)
         if not self.settings[server.id]["ON"]:
             return
         if server is None:
@@ -248,6 +249,7 @@ class Welcome:
                   "{0.name}'s #{1.name} channel".format(server, channel))
             return
         # try to add role if needed
+        failed_to_add_role = False
         if bot_role:
             try:
                 role = discord.utils.get(server.roles, name=bot_role)
@@ -255,12 +257,24 @@ class Welcome:
             except:
                 print('welcome.py: unable to add {} role to {}. '
                       'Role was deleted, network error, or lacking '
-                      'permissions'.format(bot_role, member))
+                      'permissions. Trying again in 5 seconds.'
+                      .format(bot_role, member))
+                failed_to_add_role = True
             else:
                 print('welcome.py: added {} role to '
                       'bot, {}'.format(role, member))
         # finally, welcome them
         await self.bot.send_message(channel, msg.format(member, server))
+        if failed_to_add_role:
+            await asyncio.sleep(5)
+            try:
+                await self.bot.add_roles(member, role)
+            except:
+                print('welcome.py: Still unable to add {} role to {}.'
+                      .format(bot_role, member))
+            else:
+                print('welcome.py: added {} role to '
+                      'bot, {}'.format(role, member))
 
     def get_welcome_channel(self, server):
         try:
@@ -310,11 +324,11 @@ def check_folders():
 
 def check_files():
     f = settings_path
-    if not fileIO(f, "check"):
+    if not dataIO.is_valid_json(f):
         print("Creating welcome settings.json...")
-        fileIO(f, "save", {})
+        dataIO.save_json(f, {})
     else:  # consistency check
-        current = fileIO(f, "load")
+        current = dataIO.load_json(f)
         for k, v in current.items():
             if v.keys() != default_settings.keys():
                 for key in default_settings.keys():
@@ -326,7 +340,7 @@ def check_files():
         for server in current.values():
             if isinstance(server["GREETING"], str):
                 server["GREETING"] = [server["GREETING"]]
-        fileIO(f, "save", current)
+        dataIO.save_json(f, current)
 
 
 def setup(bot):

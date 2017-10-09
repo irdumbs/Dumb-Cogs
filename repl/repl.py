@@ -59,6 +59,9 @@ def __getattr__(self, attr):
 """
 
 
+_reaction_remove_events = {}
+
+
 class ReactionRemoveEvent(asyncio.Event):
     def __init__(self, emojis, author):
         super().__init__()
@@ -260,7 +263,22 @@ class REPL:
         self.settings = dataIO.load_json('data/repl/settings.json')
         self.output_file = "data/repl/temp_output.txt"
         self.sessions = set()
-        self.reaction_remove_events = {}
+
+        # backwards compat in case menu was used by other cogs
+        # this is global now so might cause problems if other ppl
+        # are instantiating their own REPLs (which they shouldn't be)
+        self.reaction_remove_events = _reaction_remove_events
+        self.interactive_results = self.pagify_interactive_results
+
+        old_methods = ['display_page', 'remove_reactions',
+                       'wait_for_interaction', 'wait_for_reaction_remove']
+        for m in old_methods:
+            # don't do this at home kids
+            lm = (lambda mn: 
+                    lambda *agrs, **kwargs: locals()[mn](self.bot, *agrs, **kwargs)
+                 )(m)
+            setattr(self, m, lm)
+
 
     def repl_format_source(self, thing):
         """returns get_source formatted to be used in repl
@@ -319,6 +337,10 @@ class REPL:
     def get_syntax_error(self, e):
         return '```py\n{0.text}{1:>{0.offset}}\n{2}: {0}```'.format(e, '^', type(e).__name__)
 
+    async def pagify_interactive_results(self, ctx, results, single_msg=True):
+        pages = self.page_results(results, single_msg)
+        return await interactive_results(self.bot, ctx, pages, single_msg=single_msg)
+
     async def print_results(self, ctx, results):
         msg = ctx.message
         nbs = '​'
@@ -326,8 +348,8 @@ class REPL:
         is_interactive = self.settings["OUTPUT_REDIRECT"] == "pages"
         res_len = len(discord_fmt.format(results))
         if is_interactive and res_len > self.settings["PAGES_LENGTH"]:
-            page = self.interactive_results(ctx, results,
-                                            single_msg=not self.settings["MULTI_MSG_PAGING"])
+            single_msg = not self.settings["MULTI_MSG_PAGING"]
+            page = self.pagify_interactive_results(ctx, results, single_msg=single_msg)
             self.bot.loop.create_task(page)
         elif res_len > 2000:
             if self.settings["OUTPUT_REDIRECT"] == "pm":
@@ -354,22 +376,11 @@ class REPL:
 
             await self.bot.send_message(msg.channel, discord_fmt.format(results))
 
-    async def interactive_results(self, ctx, results, single_msg=True):
-        author = ctx.message.author
-        channel = ctx.message.channel
-
-        if single_msg:
-            choices = OrderedDict((('◀', 'prev'),
-                                   ('❌', 'close'),
-                                   ('▶', 'next')))
-        else:
-            choices = OrderedDict((('❌', 'close'),
-                                   ('🔽', 'next')))
-
+    def page_results(self, results, single_msg=True):
         nbs = '​'
         discord_fmt = nbs + '```py\n{}\n```'
-        prompt = ("  Output too long. Navigate pages with ({})"
-                  .format('/'.join(choices.values())))
+        prompt = ("  Output too long. Navigate pages with ({}close/next)"
+                  .format('' if single_msg else 'prev/'))
 
         pages = [p for p in pagify(results, ['\n', ' '],
                                    page_length=self.settings["PAGES_LENGTH"])]
@@ -378,134 +389,7 @@ class REPL:
                  .format(c + 1, len(pages))
                  for c, p in enumerate(pages)]
         pages[0] += prompt
-
-        choice = 'next'
-        page_num = 0
-        dirs = {'next': 1, 'prev': -1}
-        msgs = []
-        while choice:
-            msg = await self.display_page(pages[page_num], channel, choices,
-                                          msgs, single_msg)
-            choice = await self.wait_for_interaction(msg, author, choices)
-            if choice == 'close':
-                try:
-                    await self.bot.delete_messages(msgs)
-                except:  # selfbots
-                    for m in msgs:
-                        await self.bot.delete_message(m)
-                break
-            if choice in dirs:
-                page_num = (page_num + dirs[choice]) % len(pages)
-        if choice is None:
-            await self.remove_reactions(msgs.pop())
-
-    async def remove_reactions(self, msg):
-        channel = msg.channel
-        botm = msg.server.me
-        if botm.permissions_in(channel).manage_messages:
-            await self.bot.clear_reactions(msg)
-        else:
-            await asyncio.gather(*(self.bot.remove_reaction(msg, r.emoji, botm)
-                                   for r in msg.reactions if r.me),
-                                 return_exceptions=True)
-
-    async def display_page(self, page, channel, emojis, msgs, overwrite_prev):
-        if msgs and overwrite_prev:
-            msg = msgs.pop()
-            embed = msg.embeds[0] if len(msg.embeds) else None
-            msg = await self.bot.edit_message(msg, new_content=page, embed=embed)
-        else:
-            send_msg = self.bot.send_message(channel, page)
-            if msgs:
-                # refresh msg
-                prv_msg = await self.bot.get_message(channel, msgs[len(msgs) - 1].id)
-                tasks = (send_msg, self.remove_reactions(prv_msg))
-                results = await asyncio.gather(*tasks, return_exceptions=True)
-                msg = results[0]
-            else:
-                msg = await send_msg
-            try:
-                async def add_emojis(m, es):
-                    try:
-                        for e in es:  # we want these to be in order
-                            await self.bot.add_reaction(m, e)
-                    except discord.errors.NotFound:
-                        # was deleted before we could react
-                        pass
-                # but we don't want to wait
-                self.bot.loop.create_task(add_emojis(msg, emojis))
-            except:
-                pass
-        msgs.append(msg)
-        return msg
-
-    async def wait_for_interaction(self, msg, author, choices: OrderedDict,
-                                   timeout=120, delete_msg=True,
-                                   match_first_char=True):
-        """waits for a message or reaction add/remove
-        If the response is a msg,
-            schedules msg deletion it if delete_msg
-            also match 1 character msgs to the choice if match_first_char
-        """
-
-        emojis = tuple(choices.keys())
-        words = tuple(choices.values())
-        first_letters = {w[0]: w for w in words}
-
-        def mcheck(msg):
-            lm = msg.content.lower()
-            return (lm in words or
-                    (match_first_char and lm in first_letters))
-
-        tasks = (self.bot.wait_for_message(author=author, timeout=timeout,
-                                           channel=msg.channel, check=mcheck),
-                 self.bot.wait_for_reaction(user=author, timeout=timeout,
-                                            message=msg, emoji=emojis),
-                 self.wait_for_reaction_remove(user=author, timeout=timeout,
-                                               message=msg, emoji=emojis))
-
-        def msgconv(msg):
-            res = msg.content.lower()
-            if res not in words:
-                res = first_letters[res]
-
-            async def try_del():
-                try:
-                    await self.bot.delete_message(msg)
-                except:
-                    pass
-            self.bot.loop.create_task(try_del())
-            return res
-
-        def mojichoice(r):
-            return choices[r.reaction.emoji]
-
-        converters = (msgconv, mojichoice, mojichoice)
-        return await wait_for_first_response(tasks, converters)
-
-    async def wait_for_reaction_remove(self, emoji=None, *, user=None,
-                                       timeout=None, message=None, check=None):
-        """Waits for a reaction to be removed by a user from a message within a time period.
-        Made to act like other discord.py wait_for_* functions but is not fully implemented.
-
-        Because of that, wait_for_reaction_remove(self, emoji: list, user, message, timeout=None)
-        is a better representation of this function's def
-
-        returns the actual event or None if timeout
-        """
-        if not (emoji and user and message) or check or isinstance(emoji, str):
-            raise NotImplementedError("wait_for_reaction_remove(self, emoji, "
-                                      "user, message, timeout=None) is a better "
-                                      "representation of this function definition")
-        remove_event = ReactionRemoveEvent(emoji, user)
-        self.reaction_remove_events[message.id] = remove_event
-        done, pending = await asyncio.wait([remove_event.wait()],
-                                           timeout=timeout)
-        res = self.reaction_remove_events.pop(message.id)
-        try:
-            return done.pop().result() and res
-        except:
-            return None
+        return pages
 
     @commands.command(pass_context=True)
     @checks.is_owner()
@@ -790,6 +674,174 @@ class REPL:
             reaction.emoji in event.emojis):
             event.set(reaction)
 
+async def interactive_results(bot, ctx, pages, single_msg=True, timeout=120):
+    """pages can be non-empty list of any combination of 
+    strings*, embeds, or (string, embed) tuples
+    or a coroutine that returns those
+    if a coroutine is found, it will be awaited and its 
+    place in the list will be replaced with the results
+
+    single_msg is a boolean stating whether a msg should be 
+    edited in place or if a new msg should be sent for each page
+
+    * note, if an embed has alread been added and single_msg is True
+    there doesn't seem to be a way to remove the embed
+    """
+    author = ctx.message.author
+    channel = ctx.message.channel
+
+    if single_msg:
+        choices = OrderedDict((('◀', 'prev'),
+                               ('❌', 'close'),
+                               ('▶', 'next')))
+    else:
+        choices = OrderedDict((('❌', 'close'),
+                               ('🔽', 'next')))
+
+    choice = 'next'
+    page_num = 0
+    dirs = {'next': 1, 'prev': -1}
+    msgs = []
+    while choice:
+        if inspect.isawaitable(pages[page_num]):
+            pages[page_num] = await pages[page_num]
+        cur = pages[page_num]
+        txt = ''
+        kwargs = {}
+        if isinstance(cur, discord.Embed):
+            kwargs['embed'] = cur
+        elif isinstance(cur, tuple):
+            txt = cur[0]
+            kwargs['embed'] = cur[1]
+        else:
+            txt = cur
+        msg = await display_page(bot, txt, channel, choices,
+                                 msgs, single_msg, **kwargs)
+        choice = await wait_for_interaction(bot, msg, author, choices,
+                                            timeout=timeout)
+        if choice == 'close':
+            try:
+                await bot.delete_messages(msgs)
+            except:  # selfbots
+                for m in msgs:
+                    await bot.delete_message(m)
+            break
+        if choice in dirs:
+            page_num = (page_num + dirs[choice]) % len(pages)
+    if choice is None:
+        await remove_reactions(bot, msgs.pop())
+
+async def display_page(bot, page, channel, emojis, msgs, overwrite_prev, *, embed=None):
+    kwargs = {'embed': embed}
+    if msgs and overwrite_prev:
+        msg = msgs.pop()
+        if not page:  # fix bug where edit new_content='' doesn't edit
+            page = ' '
+        kwargs['new_content'] = page
+        msg = await bot.edit_message(msg, **kwargs)
+    else:
+        kwargs['content'] = page
+        send_msg = bot.send_message(channel, **kwargs)
+        if msgs:
+            # refresh msg
+            prv_msg = await bot.get_message(channel, msgs[len(msgs) - 1].id)
+            tasks = (send_msg, remove_reactions(bot, prv_msg))
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            msg = results[0]
+        else:
+            msg = await send_msg
+        try:
+            async def add_emojis(m, es):
+                try:
+                    for e in es:  # we want these to be in order
+                        await bot.add_reaction(m, e)
+                except discord.errors.NotFound:
+                    # was deleted before we could react
+                    pass
+            # but we don't want to wait
+            bot.loop.create_task(add_emojis(msg, emojis))
+        except:
+            pass
+    msgs.append(msg)
+    return msg
+
+async def remove_reactions(bot, msg):
+    channel = msg.channel
+    botm = msg.server.me
+    if botm.permissions_in(channel).manage_messages:
+        await bot.clear_reactions(msg)
+    else:
+        await asyncio.gather(*(bot.remove_reaction(msg, r.emoji, botm)
+                               for r in msg.reactions if r.me),
+                             return_exceptions=True)
+
+async def wait_for_interaction(bot, msg, author, choices: OrderedDict,
+                               timeout=120, delete_msg=True,
+                               match_first_char=True):
+    """waits for a message or reaction add/remove
+    If the response is a msg,
+        schedules msg deletion it if delete_msg
+        also match 1 character msgs to the choice if match_first_char
+    """
+
+    emojis = tuple(choices.keys())
+    words = tuple(choices.values())
+    first_letters = {w[0]: w for w in words}
+
+    def mcheck(msg):
+        lm = msg.content.lower()
+        return (lm in words or
+                (match_first_char and lm in first_letters))
+
+    tasks = (bot.wait_for_message(author=author, timeout=timeout,
+                                  channel=msg.channel, check=mcheck),
+             bot.wait_for_reaction(user=author, timeout=timeout,
+                                   message=msg, emoji=emojis),
+             wait_for_reaction_remove(bot, user=author, timeout=timeout,
+                                      message=msg, emoji=emojis))
+
+    def msgconv(msg):
+        res = msg.content.lower()
+        if res not in words:
+            res = first_letters[res]
+
+        async def try_del():
+            try:
+                await bot.delete_message(msg)
+            except:
+                pass
+        bot.loop.create_task(try_del())
+        return res
+
+    def mojichoice(r):
+        return choices[r.reaction.emoji]
+
+    converters = (msgconv, mojichoice, mojichoice)
+    return await wait_for_first_response(tasks, converters)
+
+async def wait_for_reaction_remove(bot, emoji=None, *, user=None,
+                                   timeout=None, message=None, check=None):
+    """Waits for a reaction to be removed by a user from a message within a time period.
+    Made to act like other discord.py wait_for_* functions but is not fully implemented.
+
+    Because of that, wait_for_reaction_remove(self, emoji: list, user, message, timeout=None)
+    is a better representation of this function's def
+
+    returns the actual event or None if timeout
+    """
+    if not (emoji and user and message) or check or isinstance(emoji, str):
+        raise NotImplementedError("wait_for_reaction_remove(self, emoji, "
+                                  "user, message, timeout=None) is a better "
+                                  "representation of this function definition")
+    remove_event = ReactionRemoveEvent(emoji, user)
+    _reaction_remove_events[message.id] = remove_event
+    done, pending = await asyncio.wait([remove_event.wait()],
+                                       timeout=timeout)
+    res = _reaction_remove_events.pop(message.id)
+    try:
+        return done.pop().result() and res
+    except:
+        return None
 
 def _call_catch_fmt(call, limit=None):
     stdout = io.StringIO()
