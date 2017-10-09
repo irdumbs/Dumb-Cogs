@@ -6,6 +6,7 @@ from .utils.chat_formatting import pagify
 from __main__ import send_cmd_help
 from copy import deepcopy
 import os
+import asyncio
 from random import choice as rand_choice
 
 
@@ -248,6 +249,7 @@ class Welcome:
                   "{0.name}'s #{1.name} channel".format(server, channel))
             return
         # try to add role if needed
+        failed_to_add_role = False
         if bot_role:
             try:
                 role = discord.utils.get(server.roles, name=bot_role)
@@ -255,12 +257,24 @@ class Welcome:
             except:
                 print('welcome.py: unable to add {} role to {}. '
                       'Role was deleted, network error, or lacking '
-                      'permissions'.format(bot_role, member))
+                      'permissions. Trying again in 5 seconds.'
+                      .format(bot_role, member))
+                failed_to_add_role = True
             else:
                 print('welcome.py: added {} role to '
                       'bot, {}'.format(role, member))
         # finally, welcome them
         await self.bot.send_message(channel, msg.format(member, server))
+        if failed_to_add_role:
+            await asyncio.sleep(5)
+            try:
+                await self.bot.add_roles(member, role)
+            except:
+                print('welcome.py: Still unable to add {} role to {}.'
+                      .format(bot_role, member))
+            else:
+                print('welcome.py: added {} role to '
+                      'bot, {}'.format(role, member))
 
     def get_welcome_channel(self, server):
         try:
