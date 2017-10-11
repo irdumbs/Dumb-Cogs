@@ -768,6 +768,7 @@ async def display_page(bot, page, channel, emojis, msgs, overwrite_prev, *, embe
 async def remove_reactions(bot, msg):
     channel = msg.channel
     botm = msg.server.me
+    msg = await bot.get_message(msg.channel, msg.id)
     if botm.permissions_in(channel).manage_messages:
         await bot.clear_reactions(msg)
     else:
