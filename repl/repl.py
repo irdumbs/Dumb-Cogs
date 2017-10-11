@@ -801,6 +801,8 @@ async def wait_for_interaction(bot, msg, author, choices: OrderedDict,
                                       message=msg, emoji=emojis))
 
     def msgconv(msg):
+        if not msg:
+            return None
         res = msg.content.lower()
         if res not in words:
             res = first_letters[res]
@@ -814,6 +816,8 @@ async def wait_for_interaction(bot, msg, author, choices: OrderedDict,
         return res
 
     def mojichoice(r):
+        if not r:
+            return None
         return choices[r.reaction.emoji]
 
     converters = (msgconv, mojichoice, mojichoice)
