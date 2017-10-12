@@ -694,7 +694,7 @@ async def interactive_results(bot, ctx, pages, single_msg=True, timeout=120,
     * note, if an embed has alread been added and single_msg is True
     there doesn't seem to be a way to remove the embed
     """
-    author = authors.pop() if authors else ctx.message.author
+    author = None if authors else ctx.message.author
     channel = ctx.message.channel
 
     if single_msg:
@@ -725,8 +725,7 @@ async def interactive_results(bot, ctx, pages, single_msg=True, timeout=120,
         msg = await display_page(bot, txt, channel, choices,
                                  msgs, single_msg, **kwargs)
         choice = await wait_for_interaction(bot, msg, author, choices,
-                                            timeout=timeout,
-                                            other_authors=authors)
+                                            timeout=timeout, authors=authors)
         if choice == 'close':
             try:
                 await bot.delete_messages(msgs)
@@ -786,34 +785,36 @@ async def remove_reactions(bot, msg):
 
 async def wait_for_interaction(bot, msg, author, choices: OrderedDict,
                                timeout=120, delete_msg=True,
-                               match_first_char=True, other_authors=[]):
+                               match_first_char=True, authors=[]):
     """waits for a message or reaction add/remove
     If the response is a msg,
         schedules msg deletion it if delete_msg
         also match 1 character msgs to the choice if match_first_char
 
-    other_authors is a list of other authors that can trigger interaction
-    *kept author arg for backward compatability
+    authors is a list of other authors that can trigger interaction
+    
+    *kept author arg for backward compatability. 
+     it is ignored if authors is not empty
     """
 
     emojis = tuple(choices.keys())
     words = tuple(choices.values())
     first_letters = {w[0]: w for w in words}
 
-    other_authors = [a.id for a in other_authors]
+    authors = [a.id for a in authors]
 
     def mcheck(msg):
         lm = msg.content.lower()
         return ((lm in words or (match_first_char and lm in first_letters)) and
-                (not other_authors or msg.author.id in other_authors))
+                (not authors or msg.author.id in authors))
 
     def rcheck(reaction, user):
-        return not other_authors or user.id in other_authors
+        return not authors or user.id in authors
 
     kwmsg = {'timeout': timeout, 'channel': msg.channel, 'check': mcheck}
     kwreact = {'timeout': timeout, 'message': msg,
                'emoji': emojis, 'check': rcheck}
-    if not other_authors:
+    if not authors:
         kwmsg['author'] = author
         kwreact['user'] = author
 
@@ -854,11 +855,11 @@ async def wait_for_reaction_remove(bot, emoji=None, *, user=None,
 
     returns the actual event or None if timeout
     """
-    if not (emoji and user and message) or isinstance(emoji, str):
+    if not (emoji and message) or isinstance(emoji, str):
         raise NotImplementedError("wait_for_reaction_remove(self, emoji, "
-                                  "user, message, timeout=None, check=None) "
-                                  "is a better representation of this "
-                                  "function definition")
+                                  "message, user=None, timeout=None, "
+                                  "check=None) is a better representation "
+                                  "of this function definition")
     remove_event = ReactionRemoveEvent(emoji, user, check=check)
     _reaction_remove_events[message.id] = remove_event
     done, pending = await asyncio.wait([remove_event.wait()],
