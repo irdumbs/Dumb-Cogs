@@ -804,8 +804,8 @@ async def wait_for_interaction(bot, msg, author, choices: OrderedDict,
 
     def mcheck(msg):
         lm = msg.content.lower()
-        return ((lm in words or (match_first_char and lm in first_letters))
-                and (not other_authors or msg.author.id in other_authors))
+        return ((lm in words or (match_first_char and lm in first_letters)) and
+                (not other_authors or msg.author.id in other_authors))
 
     def rcheck(reaction, user):
         return not other_authors or user.id in other_authors
