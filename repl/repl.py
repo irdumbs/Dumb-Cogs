@@ -854,10 +854,11 @@ async def wait_for_reaction_remove(bot, emoji=None, *, user=None,
 
     returns the actual event or None if timeout
     """
-    if not (emoji and user and message) or check or isinstance(emoji, str):
+    if not (emoji and user and message) or isinstance(emoji, str):
         raise NotImplementedError("wait_for_reaction_remove(self, emoji, "
-                                  "user, message, timeout=None) is a better "
-                                  "representation of this function definition")
+                                  "user, message, timeout=None, check=None) "
+                                  "is a better representation of this "
+                                  "function definition")
     remove_event = ReactionRemoveEvent(emoji, user, check=check)
     _reaction_remove_events[message.id] = remove_event
     done, pending = await asyncio.wait([remove_event.wait()],
@@ -905,6 +906,8 @@ async def wait_for_first_response(tasks, converters):
 
     try:
         return done.pop().result()
+    except NotImplementedError as e:
+        raise e
     except:
         return None
 
