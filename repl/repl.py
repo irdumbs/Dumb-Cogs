@@ -687,14 +687,20 @@ async def interactive_results(bot, ctx, pages, single_msg=True, timeout=120,
     single_msg is a boolean stating whether a msg should be 
     edited in place or if a new msg should be sent for each page
 
-    authors is a list of discord members that are allowed to interact
+    authors is a list of discord members** that are allowed to interact
     with the menu. Leaving it empty defaults to the member
     that spawned the menu.
 
     * note, if an embed has alread been added and single_msg is True
     there doesn't seem to be a way to remove the embed
+
+    ** no, you can't have the bot listen to itself..
     """
     author = None if authors else ctx.message.author
+
+    # don't listen to the bot
+    authors = [a for a in authors if a.id != ctx.message.server.me.id]
+
     channel = ctx.message.channel
 
     if single_msg:
