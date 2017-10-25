@@ -351,7 +351,7 @@ class Snacktime:
             #it's snacktime! who want's snacks?
             if self.acceptInput.get(scid,False):
                 if message.author.id not in self.alreadySnacked.get(scid,[]):
-                    agree_phrases = ["holds out hand","im ready","i'm ready","hit me up","hand over","hand me","kindly","i want","i'll have","ill have","yes","pls","plz","please","por favor","can i","i'd like","i would","may i","in my mouth","in my belly","snack me","gimme","give me","i'll take","ill take","i am","about me","me too","of course"]
+                    agree_phrases = ["holds out hand","im ready","i'm ready","hit me up","hand over","hand me","kindly","i want","i'll have","ill have","yes","pls","plz","please","por favor","can i","i'd like","i would","may i","in my mouth","in my belly","snack me","gimme","give me","i'll take","ill take","i am","about me","me too","of course","me want"]
                     userWants = False
                     for agreePhrase in agree_phrases:
                         #no one word answers
