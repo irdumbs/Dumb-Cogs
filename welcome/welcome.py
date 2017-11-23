@@ -309,7 +309,7 @@ class Welcome:
                         msg.format(ctx.message.author,server,len(server.members)))
             if bot or self.settings[server.id]["WHISPER"] is not True:
                 await self.bot.send_message(channel,
-                        msg.format(ctx.message.author, server,len(server.members)))
+                        msg.format(ctx.message.author, server,len(server.members))
         else:
             await self.bot.send_message(ctx.message.channel,
                                         "I do not have permissions "
