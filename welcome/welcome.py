@@ -60,12 +60,13 @@ class Welcome:
 
         {0} is user
         {1} is server
+        {3} is user count
         Default is set to:
             Welcome {0.name} to {1.name}!
 
         Example formats:
             {0.mention}.. What are you doing here?
-            {1.name} has a new member! {0.name}#{0.discriminator} - {0.id}
+            {1.name} has a new member! {0.name}#{0.discriminator} - {0.id} we now have {3} members \\o/
             Someone new joined! Who is it?! D: IS HE HERE TO HURT US?!"""
         server = ctx.message.server
         self.settings[server.id]["GREETING"].append(format_msg)
@@ -264,7 +265,7 @@ class Welcome:
                 print('welcome.py: added {} role to '
                       'bot, {}'.format(role, member))
         # finally, welcome them
-        await self.bot.send_message(channel, msg.format(member, server))
+        await self.bot.send_message(channel, msg.format(member, server,len(server.members))
         if failed_to_add_role:
             await asyncio.sleep(5)
             try:
@@ -305,10 +306,10 @@ class Welcome:
             msg = self.settings[server.id]["BOTS_MSG"] if bot else rand_msg
             if not bot and self.settings[server.id]["WHISPER"]:
                 await self.bot.send_message(ctx.message.author,
-                        msg.format(ctx.message.author,server))
+                        msg.format(ctx.message.author,server,len(server.members)))
             if bot or self.settings[server.id]["WHISPER"] is not True:
                 await self.bot.send_message(channel,
-                        msg.format(ctx.message.author, server))
+                        msg.format(ctx.message.author, server,len(server.members)))
         else:
             await self.bot.send_message(ctx.message.channel,
                                         "I do not have permissions "
