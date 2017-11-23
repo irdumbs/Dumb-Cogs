@@ -60,7 +60,7 @@ class Welcome:
 
         {0} is user
         {1} is server
-        {3} is user count
+        {2} is user count
         Default is set to:
             Welcome {0.name} to {1.name}!
 
