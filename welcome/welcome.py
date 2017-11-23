@@ -66,7 +66,7 @@ class Welcome:
 
         Example formats:
             {0.mention}.. What are you doing here?
-            {1.name} has a new member! {0.name}#{0.discriminator} - {0.id} we now have {3} members \\o/
+            {1.name} has a new member! {0.name}#{0.discriminator} - {0.id} we now have {2} members \\o/
             Someone new joined! Who is it?! D: IS HE HERE TO HURT US?!"""
         server = ctx.message.server
         self.settings[server.id]["GREETING"].append(format_msg)
