@@ -282,7 +282,7 @@ class Welcome:
         for channel in filter(lambda c: c.type == discord.ChannelType.text, server.channels):
             if channel.permissions_for(server.me).send_messages:
                 postable = channel
-                if channel.permissions_for(server.default_role).read_messages:
+                if channel.overwrites_for(server.default_role).read_messages is not False:
                     return channel
         # No proper replacement. Just throw out one we can post in, if we can.
         return postable
