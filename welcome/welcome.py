@@ -31,7 +31,8 @@ class Welcome:
         server = ctx.message.server
         if server.id not in self.settings:
             self.settings[server.id] = deepcopy(default_settings)
-            self.settings[server.id]["CHANNEL"] = server.default_channel.id
+            dchan = self.get_default_channel(server)
+            self.settings[server.id]["CHANNEL"] = dchan.id if dchan else None
             dataIO.save_json(settings_path, self.settings)
         if ctx.invoked_subcommand is None:
             await send_cmd_help(ctx)
@@ -120,13 +121,9 @@ class Welcome:
         dataIO.save_json(settings_path, self.settings)
 
     @welcomeset.command(pass_context=True)
-    async def channel(self, ctx, channel : discord.Channel=None):
-        """Sets the channel to send the welcome message
-
-        If channel isn't specified, the server's default channel will be used"""
+    async def channel(self, ctx, channel : discord.Channel):
+        """Sets the channel to send the welcome message"""
         server = ctx.message.server
-        if channel is None:
-            channel = ctx.message.server.default_channel
         if not server.get_member(self.bot.user.id
                                  ).permissions_in(channel).send_messages:
             await self.bot.say("I do not have permissions to send "
@@ -211,9 +208,12 @@ class Welcome:
         server = member.server
         if server.id not in self.settings:
             self.settings[server.id] = deepcopy(default_settings)
-            self.settings[server.id]["CHANNEL"] = server.default_channel.id
+            dchan = self.get_default_channel(server)
+            self.settings[server.id]["CHANNEL"] = dchan.id if dchan else None
             dataIO.save_json(settings_path, self.settings)
-        if not self.settings[server.id]["ON"]:
+        only_whisper = self.settings[server.id]["WHISPER"] is True
+        if not self.settings[server.id]["ON"] or not (
+                self.settings[server.id]["CHANNEL"] or only_whisper):
             return
         if server is None:
             print("Server is None. Private Message or some new fangled "
@@ -221,7 +221,6 @@ class Welcome:
                   "the user was {}".format(member.name))
             return
 
-        only_whisper = self.settings[server.id]["WHISPER"] is True
         bot_welcome = member.bot and self.settings[server.id]["BOTS_MSG"]
         bot_role = member.bot and self.settings[server.id]["BOTS_ROLE"]
         msg = bot_welcome or rand_choice(self.settings[server.id]["GREETING"])
@@ -275,6 +274,18 @@ class Welcome:
             else:
                 print('welcome.py: added {} role to '
                       'bot, {}'.format(role, member))
+
+    def get_default_channel(self, server):
+        if server.default_channel:
+            return server.default_channel
+        postable = None
+        for channel in filter(lambda c: c.type == discord.ChannelType.text, server.channels):
+            if channel.permissions_for(server.me).send_messages:
+                postable = channel
+                if channel.overwrites_for(server.default_role).read_messages is not False:
+                    return channel
+        # No proper replacement. Just throw out one we can post in, if we can.
+        return postable
 
     def get_welcome_channel(self, server):
         try:
